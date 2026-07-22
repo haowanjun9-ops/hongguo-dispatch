@@ -5,7 +5,12 @@ const os = require('os');
 
 const PORT = process.env.PORT || 3000;
 const QUOTA = 6;
-const TYPES = { real: '真人', ai: 'AI', second: '二剪' };
+const DEFAULT_TYPES = [
+  { id: 'real', name: '真人', color: '#15a34a' },
+  { id: 'ai', name: 'AI', color: '#2563eb' },
+  { id: 'second', name: '二剪', color: '#7c3aed' }
+];
+const TYPE_COLORS = ['#15a34a', '#2563eb', '#7c3aed', '#dc2626', '#0891b2', '#ea580c', '#4f46e5', '#db2777', '#65a30d', '#9333ea'];
 const STORE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
 const PASSCODE = process.env.PASSCODE || '';        // 普通用户密码（只读 + 派单）
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || PASSCODE; // 管理员密码；未单独设置时退化为等于 PASSCODE
@@ -30,7 +35,7 @@ function todayStr() { const d = new Date(); return d.getFullYear() + '-' + (d.ge
 
 let state;
 function seedState() {
-  const s = { lastResetDate: todayStr(), accounts: [], tasks: [], logs: [] };
+  const s = { lastResetDate: todayStr(), accounts: [], tasks: [], logs: [], types: DEFAULT_TYPES.map(t => ({ ...t })) };
   for (const t of Object.keys(SEED)) {
     SEED[t].tasks.forEach(id => s.tasks.push({ id: uid(), taskId: id, type: t }));
     SEED[t].accounts.forEach((name, i) => {
@@ -43,6 +48,7 @@ function seedState() {
 function loadState() {
   try { state = JSON.parse(fs.readFileSync(STORE, 'utf8')); }
   catch (e) { state = seedState(); }
+  if (!state.types || !state.types.length) state.types = DEFAULT_TYPES.map(t => ({ ...t }));
   ensureFresh();
   saveState();
 }
@@ -64,8 +70,11 @@ function roleOfPass(p) {
   return null;
 }
 function roleOfHeader(req) { return roleOfPass(req.headers['x-passcode'] || ''); }
-function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks }; }
+function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks, types: state.types }; }
 function typeRemaining(type) { return state.accounts.filter(a => a.type === type).reduce((s, a) => s + (QUOTA - a.used), 0); }
+function validType(type) { return state.types.some(x => x.id === type); }
+function typeName(type) { const t = state.types.find(x => x.id === type); return t ? t.name : type; }
+function typeColor(type) { const t = state.types.find(x => x.id === type); return t ? t.color : '#64748b'; }
 
 // 服务端原子分配：谁先请求谁先占，避免重复
 function allocate(type, need, who) {
@@ -82,7 +91,7 @@ function allocate(type, need, who) {
     remaining -= give;
   }
   const assigned = need - remaining;
-  if (assigned > 0) { log('dispatch', `派单 ${TYPES[type]} ${assigned} 条（${plan.length} 个账号）`, who); saveState(); broadcast(); }
+  if (assigned > 0) { log('dispatch', `派单 ${typeName(type)} ${assigned} 条（${plan.length} 个账号）`, who); saveState(); broadcast(); }
   return { plan, assigned, shortfall: remaining };
 }
 
@@ -129,6 +138,9 @@ const server = http.createServer(async (req, res) => {
     if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
     return send(res, 200, { logs: state.logs });
   }
+  if (req.method === 'GET' && url === '/api/types') {
+    return send(res, 200, { types: state.types });
+  }
 
   if (req.method === 'POST') {
     const body = await readBody(req);
@@ -144,7 +156,7 @@ const server = http.createServer(async (req, res) => {
       const who = ((body && body.adminName) || '').trim() || (role === 'admin' ? '管理员' : '用户');
       const need = parseInt(body.need, 10);
       const type = body.type;
-      if (!TYPES[type] || !need || need < 1) return send(res, 400, { error: '参数错误' });
+      if (!validType(type) || !need || need < 1) return send(res, 400, { error: '参数错误' });
       const r = allocate(type, need, who);
       return send(res, 200, r);
     }
@@ -154,6 +166,17 @@ const server = http.createServer(async (req, res) => {
     if (!role) return send(res, 403, { error: '需要访问密码' });
     if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
     const who = ((body && body.adminName) || '').trim() || '管理员';
+    if (url === '/api/type') {
+      const name = (body.name || '').trim();
+      if (!name) return send(res, 400, { error: '类型名称不能为空' });
+      if (state.types.some(t => t.name === name)) return send(res, 400, { error: '类型名称已存在' });
+      const id = (body.id || 't-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)).slice(0, 24);
+      if (state.types.some(t => t.id === id)) return send(res, 400, { error: '类型ID已存在' });
+      const color = TYPE_COLORS[state.types.length % TYPE_COLORS.length];
+      state.types.push({ id, name, color });
+      log('system', `新增素材类型「${name}」`, who); saveState(); broadcast();
+      return send(res, 200, { ok: true, type: { id, name, color } });
+    }
     if (url === '/api/inc') {
       const a = state.accounts.find(x => x.id === body.id);
       if (a && a.used < QUOTA) { a.used++; log('inc', `「${a.name}」+1（${a.used}/${QUOTA}）`, who); saveState(); broadcast(); }
@@ -165,22 +188,36 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     if (url === '/api/account') {
-      const name = (body.name || '').trim();
+      const names = Array.isArray(body.names) ? body.names : [body.name];
       const type = body.type;
       const taskId = body.taskId;
-      if (!name || !TYPES[type] || !taskId) return send(res, 400, { error: '参数错误' });
-      state.accounts.push({ id: uid(), name, type, taskId, used: 0, createdAt: Date.now() });
-      log('account', `新增账号「${name}」(${TYPES[type]})`, who); saveState(); broadcast();
-      return send(res, 200, { ok: true });
+      if (!validType(type) || !taskId) return send(res, 400, { error: '参数错误' });
+      let added = 0;
+      for (const n of names) {
+        const name = (n || '').trim();
+        if (!name) continue;
+        state.accounts.push({ id: uid(), name, type, taskId, used: 0, createdAt: Date.now() });
+        log('account', `新增账号「${name}」(${typeName(type)})`, who);
+        added++;
+      }
+      if (added) { saveState(); broadcast(); }
+      return send(res, 200, { ok: true, added });
     }
     if (url === '/api/task') {
-      const id = (body.taskId || '').trim();
+      const ids = Array.isArray(body.taskIds) ? body.taskIds : [body.taskId];
       const type = body.type;
-      if (!id || !TYPES[type]) return send(res, 400, { error: '参数错误' });
-      if (state.tasks.some(t => t.taskId === id && t.type === type)) return send(res, 400, { error: '任务已存在' });
-      state.tasks.push({ id: uid(), taskId: id, type });
-      log('task', `新增任务 ${id} (${TYPES[type]})`, who); saveState(); broadcast();
-      return send(res, 200, { ok: true });
+      if (!validType(type)) return send(res, 400, { error: '参数错误' });
+      let added = 0;
+      for (const item of ids) {
+        const id = (item || '').trim();
+        if (!id) continue;
+        if (state.tasks.some(t => t.taskId === id && t.type === type)) continue;
+        state.tasks.push({ id: uid(), taskId: id, type });
+        log('task', `新增任务 ${id} (${typeName(type)})`, who);
+        added++;
+      }
+      if (added) { saveState(); broadcast(); }
+      return send(res, 200, { ok: true, added });
     }
     if (url === '/api/reassign') {
       const a = state.accounts.find(x => x.id === body.id);

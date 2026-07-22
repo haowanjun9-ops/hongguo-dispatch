@@ -29,10 +29,8 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .card .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
-.card.real .bar{background:var(--green)} .card.ai .bar{background:var(--blue)} .card.second .bar{background:var(--purple)}
 .card .t{font-weight:800;font-size:15px}
 .card .n{font-size:30px;font-weight:800;margin-top:6px}
-.card.real .n{color:var(--green)} .card.ai .n{color:var(--blue)} .card.second .n{color:var(--purple)}
 .card .n small{font-size:13px;color:var(--muted);font-weight:600}
 .card .s{font-size:12px;color:var(--muted);margin-top:4px}
 
@@ -40,9 +38,6 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .dispatch .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .seg{display:flex;gap:6px}
 .seg .o{padding:9px 16px;border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);background:#fff}
-.seg .o.on[data-t=real]{background:var(--green);color:#fff;border-color:var(--green)}
-.seg .o.on[data-t=ai]{background:var(--blue);color:#fff;border-color:var(--blue)}
-.seg .o.on[data-t=second]{background:var(--purple);color:#fff;border-color:var(--purple)}
 .num{display:flex;flex-direction:column;gap:5px}
 .num label{font-size:12px;font-weight:700;color:var(--muted)}
 .num input{width:110px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:700;outline:none}
@@ -73,7 +68,6 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .acc .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .acc .nm{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
-.tag.real{background:var(--green-bg);color:var(--green)} .tag.ai{background:var(--blue-bg);color:var(--blue)} .tag.second{background:var(--purple-bg);color:var(--purple)}
 .acc .tk{font-size:11px;color:var(--muted);margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .acc .bar{height:7px;border-radius:5px;background:var(--border);margin-top:8px;overflow:hidden}
 .acc .bar>i{display:block;height:100%;background:var(--green);border-radius:5px}
@@ -163,6 +157,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
     <div class="act">
       <button id="addAcc">+ 账号</button>
       <button id="addTask">+ 任务</button>
+      <button id="addType">+ 类型</button>
       <button class="danger" id="reset">↻ 刷新今日</button>
     </div>
   </div>
@@ -172,7 +167,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 <div class="modal-mask" id="m" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:14px;padding:20px;width:330px;max-width:92vw">
     <h3 id="mTitle" style="font-size:16px;margin-bottom:14px">新增</h3>
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--muted)">名称 / 任务ID</label><input id="mVal" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none"></div>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--muted)">名称 / 任务ID（每行一个，可批量）</label><textarea id="mVal" rows="5" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none;resize:vertical;font-family:inherit"></textarea></div>
     <div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted)">类型</label>
       <select id="mType" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none">
         <option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option>
@@ -182,8 +177,11 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 </div>
 
 <script>
-const QUOTA=6, TYPES={real:'真人',ai:'AI',second:'二剪'}, TC={real:'tag-real',ai:'tag-ai',second:'tag-second'};
-let S=null, dispType='real', PW='', ROLE=null;
+const QUOTA=6;
+let TYPES={}, TYPE_COLORS={};
+let S=null, dispType='', PW='', ROLE=null;
+function refreshTypes(){ if(!S || !S.types)return; TYPES={}; TYPE_COLORS={}; S.types.forEach(t=>{TYPES[t.id]=t.name; TYPE_COLORS[t.id]=t.color;}); if(!dispType || !TYPES[dispType]) dispType=S.types[0]?.id||''; }
+function tagStyle(type){const c=TYPE_COLORS[type]||'#64748b'; return `background:${c}1a;color:${c}`;}
 function authH(){return PW?{'x-passcode':PW}:{};}
 function withName(obj){const n=localStorage.getItem('hg_name');return n?Object.assign({},obj,{adminName:n}):obj;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
@@ -192,20 +190,25 @@ function remaining(type){return S.accounts.filter(a=>a.type===type).reduce((s,a)
 
 function render(){
   if(!S)return;
+  refreshTypes();
   // 类型卡片
-  document.getElementById('cards').innerHTML=Object.keys(TYPES).map(type=>{
+  const types=Object.keys(TYPES);
+  document.getElementById('cards').innerHTML=types.map(type=>{
+    const c=TYPE_COLORS[type]||'#64748b';
     const accs=S.accounts.filter(a=>a.type===type);
     const cap=accs.length*QUOTA, used=accs.reduce((s,a)=>s+a.used,0), rem=cap-used;
     const avail=accs.filter(a=>a.used<QUOTA).length;
     const pct=cap?Math.round(used/cap*100):0;
-    return `<div class="card ${type}"><span class="bar"></span>
+    return `<div class="card"><span class="bar" style="background:${c}"></span>
       <div class="t">${TYPES[type]}</div>
-      <div class="n">${rem}<small> 条剩余</small></div>
+      <div class="n" style="color:${c}">${rem}<small> 条剩余</small></div>
       <div class="s">可用 ${avail} 号 · 已传 ${used}/${cap}</div>
       <div class="s">总容量 ${cap}（${Math.round(pct)}% 已用）</div></div>`;
-  }).join('');
+  }).join('')||'<div class="empty">暂无类型</div>';
   // 提示
-  document.getElementById('hint').innerHTML=`${TYPES[dispType]} 当前剩余 <b style="color:${dispType==='real'?'var(--green)':dispType==='ai'?'var(--blue)':'var(--purple)'}">${remaining(dispType)}</b> 条`;
+  const hintType=dispType||types[0]||'';
+  const hintColor=TYPE_COLORS[hintType]||'#64748b';
+  document.getElementById('hint').innerHTML=`${TYPES[hintType]||''} 当前剩余 <b style="color:${hintColor}">${remaining(hintType)}</b> 条`;
   // 列表
   const tab=document.querySelector('.tab.on').dataset.t;
   document.getElementById('cAcc').textContent=S.accounts.length;
@@ -215,12 +218,13 @@ function render(){
     const list=S.accounts.slice().sort((a,b)=>(a.used-b.used)||a.name.localeCompare(b.name,'zh'));
     document.getElementById('list').innerHTML=list.map(a=>{
       const full=a.used>=QUOTA, lf=QUOTA-a.used, pct=Math.min(100,Math.round(a.used/QUOTA*100));
+      const c=TYPE_COLORS[a.type]||'#64748b';
       return `<div class="acc ${full?'full':''}">
         ${admin?`<button class="x" data-del="${a.id}">✕</button>`:''}
-        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag ${TC[a.type]}">${TYPES[a.type]}</span></div>
+        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span></div>
         <div class="tk">任务 ${taskIdOf(a.taskId)}</div>
-        <div class="bar ${full?'full':''}"><i style="width:${pct}%"></i></div>
-        <div class="mt"><span class="lf">剩 ${lf} 条</span><span class="st">${a.used}/${QUOTA}</span></div>
+        <div class="bar ${full?'full':''}"><i style="width:${pct}%;background:${c}"></i></div>
+        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${a.used}/${QUOTA}</span></div>
         ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${a.used<=0?'disabled':''}>−1</button></div>`:''}
       </div>`;
     }).join('');
@@ -228,10 +232,26 @@ function render(){
     document.getElementById('list').innerHTML=S.tasks.map(t=>{
       const accs=S.accounts.filter(a=>a.taskId===t.id);
       const used=accs.reduce((s,a)=>s+a.used,0), cap=accs.length*QUOTA, rem=cap-used;
-      return `<div class="tsk"><div class="id"><span class="tag ${TC[t.type]}">${TYPES[t.type]}</span>${t.taskId}</div>
-        <div class="m">绑定 ${accs.length} 号 · 今日 ${used}/${cap} · 剩余 <b style="color:var(--green)">${rem}</b></div></div>`;
+      const c=TYPE_COLORS[t.type]||'#64748b';
+      return `<div class="tsk"><div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
+        <div class="m">绑定 ${accs.length} 号 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
     }).join('')||'<div class="empty">暂无任务</div>';
   }
+  // 动态渲染自动分配类型选择
+  const dType=document.getElementById('dType');
+  if(dType && dType.dataset.rendered!=='yes'){
+    dType.innerHTML=types.map(type=>`<div class="o${type===dispType?' on':''}" data-t="${type}" style="${type===dispType?`background:${TYPE_COLORS[type]};color:#fff;border-color:${TYPE_COLORS[type]}`:''}">${TYPES[type]}</div>`).join('');
+    dType.dataset.rendered='yes';
+  }else if(dType){
+    Array.from(dType.children).forEach(el=>{
+      const on=el.dataset.t===dispType, c=TYPE_COLORS[el.dataset.t]||'#64748b';
+      el.classList.toggle('on',on);
+      el.style.cssText=on?`background:${c};color:#fff;border-color:${c}`:'';
+    });
+  }
+  // 动态渲染新增弹窗类型下拉
+  const mType=document.getElementById('mType');
+  if(mType){ mType.innerHTML=types.map(type=>`<option value="${type}">${TYPES[type]}</option>`).join(''); }
   document.getElementById('upd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
 }
 
@@ -262,6 +282,7 @@ function applyRole(){
   document.getElementById('viewerNote').style.display=admin?'none':'block';
   document.getElementById('addAcc').style.display=admin?'':'none';
   document.getElementById('addTask').style.display=admin?'':'none';
+  document.getElementById('addType').style.display=admin?'':'none';
   document.getElementById('reset').style.display=admin?'':'none';
   document.getElementById('logout').style.display=(ROLE&&PW)?'inline-block':'none';
   if(admin){document.getElementById('logsBox').style.display='block';startLogSync();}else{document.getElementById('logsBox').style.display='none';stopLogSync();}
@@ -334,13 +355,32 @@ function openM(mode){if(ROLE!=='admin')return;mMode=mode;document.getElementById
   document.getElementById('mVal').value='';document.getElementById('m').style.display='flex';document.getElementById('mVal').focus();}
 document.getElementById('addAcc').onclick=()=>openM('acc');
 document.getElementById('addTask').onclick=()=>openM('task');
+document.getElementById('addType').onclick=async()=>{
+  if(ROLE!=='admin')return;
+  const name=prompt('请输入新素材类型名称（如：混剪）：');
+  if(!name || !name.trim())return;
+  const r=await fetch('/api/type',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({name:name.trim()}))});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===400){toast(d.error||'类型已存在或ID无效');return;}
+  toast('已添加类型：'+name.trim());
+};
 document.getElementById('mCancel').onclick=()=>document.getElementById('m').style.display='none';
 document.getElementById('mOk').onclick=async()=>{
-  const val=document.getElementById('mVal').value.trim(),type=document.getElementById('mType').value;
-  if(!val){toast('请填写内容');return;}
-  if(mMode==='acc'){await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({name:val,type,taskId:S.tasks.find(t=>t.type===type)?.id||''}))});}
-  else{const r=await fetch('/api/task',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({taskId:val,type}))});if(r.status===400){toast('该类型任务已存在');return;}}
-  document.getElementById('m').style.display='none';toast('已添加');
+  const lines=document.getElementById('mVal').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const type=document.getElementById('mType').value;
+  if(!lines.length){toast('请填写内容');return;}
+  if(mMode==='acc'){
+    const taskId=S.tasks.find(t=>t.type===type)?.id||'';
+    const r=await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({names:lines,type,taskId}))});
+    const d=await r.json().catch(()=>({}));
+    toast('已添加 '+(d.added||lines.length)+' 个账号');
+  }else{
+    const r=await fetch('/api/task',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({taskIds:lines,type}))});
+    const d=await r.json().catch(()=>({}));
+    if(r.status===400){toast(d.error||'部分任务已存在');return;}
+    toast('已添加 '+(d.added||lines.length)+' 个任务');
+  }
+  document.getElementById('m').style.display='none';
 };
 document.getElementById('reset').onclick=async()=>{if(confirm('清零今日所有计数？')){await fetch('/api/reset',{method:'POST',headers:authH(),body:JSON.stringify(withName({}))});toast('已刷新今日');}};
 // 分享链接

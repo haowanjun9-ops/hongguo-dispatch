@@ -137,17 +137,23 @@ const server = http.createServer(async (req, res) => {
       if (!role) return send(res, 401, { ok: false });
       return send(res, 200, { ok: true, role });
     }
-    const role = roleOfHeader(req);
-    if (!role) return send(res, 403, { error: '需要访问密码' });
-    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
-    const who = ((body && body.adminName) || '').trim() || '管理员';
+    // 自动分配：所有已认证用户可用
     if (url === '/api/dispatch') {
+      const role = roleOfHeader(req);
+      if (!role) return send(res, 403, { error: '需要访问密码' });
+      const who = ((body && body.adminName) || '').trim() || (role === 'admin' ? '管理员' : '用户');
       const need = parseInt(body.need, 10);
       const type = body.type;
       if (!TYPES[type] || !need || need < 1) return send(res, 400, { error: '参数错误' });
       const r = allocate(type, need, who);
       return send(res, 200, r);
     }
+
+    // 以下管理接口仅管理员可用
+    const role = roleOfHeader(req);
+    if (!role) return send(res, 403, { error: '需要访问密码' });
+    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
+    const who = ((body && body.adminName) || '').trim() || '管理员';
     if (url === '/api/inc') {
       const a = state.accounts.find(x => x.id === body.id);
       if (a && a.used < QUOTA) { a.used++; log('inc', `「${a.name}」+1（${a.used}/${QUOTA}）`, who); saveState(); broadcast(); }

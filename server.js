@@ -140,7 +140,7 @@ const server = http.createServer(async (req, res) => {
     const role = roleOfHeader(req);
     if (!role) return send(res, 403, { error: '需要访问密码' });
     if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
-    const who = (req.headers['x-admin-name'] || '').trim() || '管理员';
+    const who = ((body && body.adminName) || '').trim() || '管理员';
     if (url === '/api/dispatch') {
       const need = parseInt(body.need, 10);
       const type = body.type;

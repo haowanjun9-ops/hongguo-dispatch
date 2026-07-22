@@ -184,7 +184,8 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 <script>
 const QUOTA=6, TYPES={real:'真人',ai:'AI',second:'二剪'}, TC={real:'tag-real',ai:'tag-ai',second:'tag-second'};
 let S=null, dispType='real', PW='', ROLE=null;
-function authH(){const h=PW?{'x-passcode':PW}:{};if(ROLE==='admin'){const n=localStorage.getItem('hg_name');if(n)h['x-admin-name']=n;}return h;}
+function authH(){return PW?{'x-passcode':PW}:{};}
+function withName(obj){const n=localStorage.getItem('hg_name');return n?Object.assign({},obj,{adminName:n}):obj;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
 function remaining(type){return S.accounts.filter(a=>a.type===type).reduce((s,a)=>s+(QUOTA-a.used),0);}
@@ -306,7 +307,7 @@ document.getElementById('dType').addEventListener('click',e=>{const o=e.target.c
 document.getElementById('go').onclick=async()=>{
   const need=parseInt(document.getElementById('dNum').value,10);
   if(!need||need<1){toast('请输入条数');return;}
-  const r=await fetch('/api/dispatch',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({type:dispType,need})}).then(x=>x.json());
+  const r=await fetch('/api/dispatch',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({type:dispType,need}))}).then(x=>x.json());
   if(!r.plan){toast(r.error||'无权限');return;}
   document.getElementById('result').classList.add('show');
   document.getElementById('rPill').innerHTML=
@@ -321,8 +322,8 @@ document.getElementById('go').onclick=async()=>{
 document.getElementById('list').addEventListener('click',async e=>{
   if(ROLE!=='admin')return;
   const inc=e.target.dataset.inc,dec=e.target.dataset.dec,del=e.target.dataset.del;
-  if(inc){await fetch('/api/inc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:inc})});}
-  else if(dec){await fetch('/api/dec',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:dec})});}
+  if(inc){await fetch('/api/inc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:inc}))});}
+  else if(dec){await fetch('/api/dec',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:dec}))});}
   else if(del){if(confirm('删除该账号？')){await fetch('/api/account/'+del,{method:'DELETE',headers:authH()});}}
 });
 document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
@@ -337,11 +338,11 @@ document.getElementById('mCancel').onclick=()=>document.getElementById('m').styl
 document.getElementById('mOk').onclick=async()=>{
   const val=document.getElementById('mVal').value.trim(),type=document.getElementById('mType').value;
   if(!val){toast('请填写内容');return;}
-  if(mMode==='acc'){await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({name:val,type,taskId:S.tasks.find(t=>t.type===type)?.id||''})});}
-  else{const r=await fetch('/api/task',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({taskId:val,type})});if(r.status===400){toast('该类型任务已存在');return;}}
+  if(mMode==='acc'){await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({name:val,type,taskId:S.tasks.find(t=>t.type===type)?.id||''}))});}
+  else{const r=await fetch('/api/task',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({taskId:val,type}))});if(r.status===400){toast('该类型任务已存在');return;}}
   document.getElementById('m').style.display='none';toast('已添加');
 };
-document.getElementById('reset').onclick=async()=>{if(confirm('清零今日所有计数？')){await fetch('/api/reset',{method:'POST',headers:authH()});toast('已刷新今日');}};
+document.getElementById('reset').onclick=async()=>{if(confirm('清零今日所有计数？')){await fetch('/api/reset',{method:'POST',headers:authH(),body:JSON.stringify(withName({}))});toast('已刷新今日');}};
 // 分享链接
 document.getElementById('link').value=location.origin+'/';
 document.getElementById('copyLink').onclick=()=>{const i=document.getElementById('link');i.select();

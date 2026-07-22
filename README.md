@@ -20,7 +20,7 @@ PORT=3000 PASSCODE=你的密码 node server.js
 
 ## 一键部署到 Render
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/USERNAME/REPO)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/haowanjun9-ops/hongguo-dispatch)
 
 点上面的按钮（或把链接里的 `USERNAME/REPO` 换成你的仓库）即可一键部署。
 

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红果素材分发平台</title>
+<style>
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --text:#1f2933; --muted:#6b7280;
+  --border:#e3e8ef; --green:#15a34a; --green-bg:#dcfce7; --green-br:#86efac;
+  --red:#dc2626; --red-bg:#fee2e2; --red-br:#fca5a5;
+  --blue:#2563eb; --blue-bg:#e0edff; --blue-br:#bcd3ff;
+  --amber:#d97706; --amber-bg:#fef3c7; --purple:#7c3aed; --purple-bg:#ede9fe;
+  --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);padding:20px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto}
+header.top{margin-bottom:18px}
+header.top h1{font-size:24px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;gap:10px}
+header.top .dot{width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.15)}
+header.top p{color:var(--muted);font-size:13px;margin-top:4px}
+
+/* 顶部按类型剩余量看板 */
+.type-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.type-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.type-card .flag{position:absolute;left:0;top:0;bottom:0;width:5px}
+.type-card.real .flag{background:var(--green)} .type-card.ai .flag{background:var(--blue)} .type-card.second .flag{background:var(--purple)}
+.type-card .head{display:flex;align-items:center;justify-content:space-between}
+.type-card .tname{font-weight:800;font-size:16px}
+.type-card .tname small{font-weight:600;color:var(--muted);font-size:12px;margin-left:6px}
+.type-card .big{font-size:34px;font-weight:800;margin-top:6px;letter-spacing:.5px}
+.type-card.real .big{color:var(--green)} .type-card.ai .big{color:var(--blue)} .type-card.second .big{color:var(--purple)}
+.type-card .big small{font-size:14px;color:var(--muted);font-weight:600}
+.type-card .line{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--muted)}
+.type-card .line b{color:var(--text)}
+.type-card .bar{height:7px;border-radius:5px;background:var(--border);margin-top:10px;overflow:hidden}
+.type-card .bar>i{display:block;height:100%;border-radius:5px}
+.type-card.real .bar>i{background:var(--green)} .type-card.ai .bar>i{background:var(--blue)} .type-card.second .bar>i{background:var(--purple)}
+
+/* 智能派单面板 */
+.dispatch{background:linear-gradient(180deg,#ffffff,#f7faff);border:1px solid var(--blue-br);border-radius:16px;
+  padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px}
+.dispatch h2{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.dispatch h2 .ico{width:24px;height:24px;border-radius:7px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+.dispatch .form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.dispatch .fg{display:flex;flex-direction:column;gap:5px}
+.dispatch .fg label{font-size:12px;font-weight:700;color:var(--muted)}
+.dispatch .fg select,.dispatch .fg input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;outline:none;background:#fff}
+.dispatch .fg select:focus,.dispatch .fg input:focus{border-color:var(--blue)}
+.dispatch .fg input{width:120px;font-weight:700;font-size:16px}
+.dispatch .fg.type-seg{gap:5px}
+.seg{display:flex;gap:6px}
+.seg .opt{padding:9px 16px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--muted);transition:.15s}
+.seg .opt:hover{border-color:var(--blue-br)}
+.seg .opt.on[data-t="real"]{background:var(--green);color:#fff;border-color:var(--green)}
+.seg .opt.on[data-t="ai"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+.seg .opt.on[data-t="second"]{background:var(--purple);color:#fff;border-color:var(--purple)}
+.dispatch .hint{font-size:12px;color:var(--muted);margin-left:auto;align-self:center}
+.dispatch .hint b{font-size:15px}
+.dispatch .hint b.real{color:var(--green)}.dispatch .hint b.ai{color:var(--blue)}.dispatch .hint b.second{color:var(--purple)}
+
+/* 派单结果 */
+.plan{margin-top:16px;border-top:1px dashed var(--border);padding-top:14px;display:none}
+.plan.show{display:block}
+.plan .summary{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;font-size:14px}
+.plan .summary .pill{padding:5px 12px;border-radius:20px;font-weight:700;font-size:13px}
+.plan .summary .pill.ok{background:var(--green-bg);color:var(--green)}
+.plan .summary .pill.warn{background:var(--amber-bg);color:var(--amber)}
+.plan table{width:100%;border-collapse:collapse;font-size:13px}
+.plan th{text-align:left;color:var(--muted);font-size:12px;font-weight:700;padding:8px 10px;border-bottom:2px solid var(--border)}
+.plan td{padding:9px 10px;border-bottom:1px solid var(--border)}
+.plan tr:last-child td{border-bottom:none}
+.plan .anum{font-weight:700}
+.plan .tid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+.plan .assign{font-weight:800;color:var(--blue);font-size:15px}
+.plan .after{color:var(--muted);font-size:12px}
+.plan .acts{display:flex;gap:10px;margin-top:14px}
+.copybox{margin-top:12px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;color:var(--text);display:none}
+.copybox.show{display:block}
+
+/* 工具栏 */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;background:var(--panel);
+  border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+.tabs{display:flex;gap:6px}
+.tab{border:1px solid var(--border);background:#f8fafc;color:var(--muted);padding:7px 14px;border-radius:10px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.tab:hover{border-color:var(--blue-br)}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.search{flex:1;min-width:160px;position:relative}
+.search input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none}
+.search input:focus{border-color:var(--blue)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5}
+.btn{border:1px solid var(--border);background:#fff;color:var(--text);padding:8px 14px;border-radius:10px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--blue-br);background:#f8fafc}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:#1d4ed8}
+.btn.big{padding:11px 22px;font-size:14px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--red);border-color:var(--red-br)}
+.btn.danger:hover{background:var(--red-bg)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.section-title{font-size:15px;font-weight:800;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.section-title .badge{font-size:11px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--border);
+  padding:2px 8px;border-radius:20px}
+
+/* 账号网格 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow);
+  position:relative;transition:.15s}
+.card.full{opacity:.62;filter:grayscale(.25)}
+.card.hl{box-shadow:0 0 0 2px var(--blue),var(--shadow)}
+.card .row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card .name{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.type-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.type-real{background:var(--green-bg);color:var(--green)}
+.type-ai{background:var(--blue-bg);color:var(--blue)}
+.type-second{background:var(--purple-bg);color:var(--purple)}
+.card .task{margin-top:10px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.card .task select{font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:7px;color:var(--text);max-width:160px}
+.progress{height:9px;border-radius:6px;background:var(--border);margin-top:10px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .25s}
+.progress.full>i{background:var(--red)}
+.card .meter{display:flex;justify-content:space-between;align-items:center;margin-top:7px;font-size:12px}
+.card .meter .used{font-weight:800;font-size:14px}
+.card .meter .used.full{color:var(--red)}
+.card .meter .left{color:var(--green);font-weight:700}
+.status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.status.ok{background:var(--green-bg);color:var(--green)}
+.status.no{background:var(--red-bg);color:var(--red)}
+.card .acts{display:flex;gap:6px;margin-top:12px}
+.card .acts .btn{flex:1;padding:7px 0;font-size:12px}
+.card .del{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:6px;border:1px solid var(--border);
+  background:#fff;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;display:none;align-items:center;justify-content:center}
+.card:hover .del{display:flex}
+.card .del:hover{background:var(--red-bg);color:var(--red);border-color:var(--red-br)}
+
+/* 任务概览 */
+.task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.task-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.task-card .tid{font-weight:700;font-size:13px;word-break:break-all;display:flex;align-items:center;gap:6px}
+.task-card .meta{font-size:12px;color:var(--muted);margin-top:6px}
+.task-card .meta b{color:var(--text)}
+
+/* 弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:22px;width:360px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h3{font-size:17px;margin-bottom:16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:14px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--blue)}
+.modal .acts{display:flex;gap:10px;margin-top:6px}
+.modal .acts .btn{flex:1;padding:10px 0}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2933;color:#fff;padding:11px 20px;
+  border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast.show{opacity:1}
+
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:14px;background:var(--panel);border:1px dashed var(--border);border-radius:14px}
+.foot{text-align:center;color:var(--muted);font-size:12px;margin:24px 0 8px}
+@media(max-width:760px){.type-stats{grid-template-columns:1fr}.dispatch .hint{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1><span class="dot"></span>红果素材分发平台</h1>
+    <p>报数量 · 自动派单 · 一账号一任务每天上限 6 条 · 次日凌晨自动刷新 · 剩余量按类型实时统计</p>
+  </header>
+
+  <!-- 按类型剩余量 -->
+  <div class="type-stats" id="typeStats"></div>
+
+  <!-- 智能派单 -->
+  <div class="dispatch">
+    <h2><span class="ico">⚡</span>智能派单 · 输入需要的条数，自动分配账号和任务</h2>
+    <div class="form">
+      <div class="fg type-seg">
+        <label>素材类型</label>
+        <div class="seg" id="dType">
+          <div class="opt on" data-t="real">真人</div>
+          <div class="opt" data-t="ai">AI</div>
+          <div class="opt" data-t="second">二剪</div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>需要上传的条数</label>
+        <input type="number" id="dNum" min="1" value="10" placeholder="条数">
+      </div>
+      <button class="btn primary big" id="doDispatch">自动分配</button>
+      <div class="hint" id="dHint"></div>
+    </div>
+
+    <div class="plan" id="plan">
+      <div class="summary" id="planSummary"></div>
+      <table>
+        <thead><tr><th>账号</th><th>任务 ID</th><th>本次分配</th><th>分配后</th></tr></thead>
+        <tbody id="planBody"></tbody>
+      </table>
+      <div class="acts">
+        <button class="btn primary" id="confirmPlan">✓ 确认执行（扣减余量）</button>
+        <button class="btn" id="copyPlan">复制派单清单</button>
+        <button class="btn ghost" id="cancelPlan">取消</button>
+      </div>
+      <div class="copybox" id="copyBox"></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-type="all">全部</div>
+      <div class="tab" data-type="real">真人</div>
+      <div class="tab" data-type="ai">AI</div>
+      <div class="tab" data-type="second">二剪</div>
+    </div>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="search" placeholder="搜索账号名 / 任务ID…">
+    </div>
+    <button class="btn primary" id="addAccountBtn">+ 新增账号</button>
+    <button class="btn" id="addTaskBtn">+ 新增任务</button>
+    <button class="btn danger" id="resetBtn">↻ 刷新今日计数</button>
+  </div>
+
+  <div class="section-title">账号明细 <span class="badge" id="accCount">0</span></div>
+  <div class="grid" id="accGrid"></div>
+
+  <div class="section-title">任务概览 <span class="badge" id="taskCount">0</span></div>
+  <div class="task-grid" id="taskGrid"></div>
+
+  <div class="foot">提示：本机浏览器本地存储，单人使用。如需团队多人共享实时状态，可后续接入后端服务。</div>
+</div>
+
+<!-- 新增账号弹窗 -->
+<div class="modal-mask" id="accModal">
+  <div class="modal">
+    <h3>新增账号</h3>
+    <div class="field"><label>账号名称</label><input id="accName" placeholder="例如：未来成长日记"></div>
+    <div class="field"><label>素材类型</label>
+      <select id="accType"><option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option></select>
+    </div>
+    <div class="field"><label>绑定任务</label><select id="accTask"></select></div>
+    <div class="acts">
+      <button class="btn ghost" data-close>取消</button>
+      <button class="btn primary" id="accSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增任务弹窗 -->
+<div class="modal-mask" id="taskModal">
+  <div class="modal">
+    <h3>新增任务</h3>
+    <div class="field"><label>任务 ID</label><input id="taskId" placeholder="粘贴任务ID数字"></div>
+    <div class="field"><label>素材类型</label>
+      <select id="taskType"><option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option></select>
+    </div>
+    <div class="acts">
+      <button class="btn ghost" data-close>取消</button>
+      <button class="btn primary" id="taskSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const QUOTA=6;
+const TYPES={real:"真人",ai:"AI",second:"二剪"};
+const TYPE_CLASS={real:"type-real",ai:"type-ai",second:"type-second"};
+const STORE="hongguo_platform_v1";
+
+const SEED={
+  real:{
+    accounts:["未来成长日记","智能效率社","学霸的隐藏武器","次元创意工坊","NPCCCCC","会爆","对啊对啊对","寻剧千百遍","券券喂饱你","追剧老伙计","外卖阿彭","超荟看剧","出片达人小葵","好剧治愈所","追剧充电站","剧剧大世界"],
+    tasks:["7576849166903738387","7566460022732111881","7566460271952281626","7576848881806622726","7661895222078521354","7661895103413239817","7661894455893196810","7661894329392349226"]
+  },
+  ai:{
+    accounts:["效率火箭","苏苏说说看","苏苏有话说","推啊推啊推","动态漫不打烊","小余爱追剧","追剧小雷达","看剧会上瘾"],
+    tasks:["7626972396727304228","7660403527034355763"]
+  },
+  second:{
+    accounts:["超能工具箱","我的智能外挂","董小姐自媒体"],
+    tasks:["7566459273833037878","7565814540873711643","7661894113079836698","7661893595297562643"]
+  }
+};
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+
+function seedData(){
+  const data={lastResetDate:todayStr(),accounts:[],tasks:[]};
+  for(const t of Object.keys(SEED)){
+    SEED[t].tasks.forEach(id=>data.tasks.push({id:uid(),taskId:id,type:t}));
+    SEED[t].accounts.forEach((name,i)=>{
+      const task=data.tasks.filter(x=>x.type===t)[i%SEED[t].tasks.length];
+      data.accounts.push({id:uid(),name,type:t,taskId:task.id,used:0,createdAt:Date.now()});
+    });
+  }
+  return data;
+}
+
+function load(){
+  let d;
+  try{d=JSON.parse(localStorage.getItem(STORE));}catch(e){}
+  if(!d||!d.accounts){d=seedData();save(d);}
+  if(d.lastResetDate!==todayStr()){
+    d.accounts.forEach(a=>a.used=0);
+    d.lastResetDate=todayStr();
+    save(d);
+  }
+  return d;
+}
+function save(d){localStorage.setItem(STORE,JSON.stringify(d));}
+
+let DATA=load();
+let curType="all", curSearch="";
+let dispatchType="real", currentPlan=null;
+
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1900);
+}
+function taskIdOf(a){const t=DATA.tasks.find(x=>x.id===a.taskId);return t?t.taskId:"—";}
+function typeRemaining(type){
+  return DATA.accounts.filter(a=>a.type===type).reduce((s,a)=>s+(QUOTA-a.used),0);
+}
+
+/* 顶部按类型剩余量 */
+function renderTypeStats(){
+  const box=document.getElementById("typeStats");
+  box.innerHTML=Object.keys(TYPES).map(type=>{
+    const accs=DATA.accounts.filter(a=>a.type===type);
+    const cap=accs.length*QUOTA;
+    const used=accs.reduce((s,a)=>s+a.used,0);
+    const remain=cap-used;
+    const availAcc=accs.filter(a=>a.used<QUOTA).length;
+    const pct=cap?Math.round(used/cap*100):0;
+    return `<div class="type-card ${type}">
+      <span class="flag"></span>
+      <div class="head"><div class="tname">${TYPES[type]}<small>${accs.length} 账号 / ${DATA.tasks.filter(t=>t.type===type).length} 任务</small></div></div>
+      <div class="big">${remain}<small> 条剩余</small></div>
+      <div class="line"><span>可用账号 <b>${availAcc}</b></span><span>今日已传 <b>${used}</b></span><span>总容量 <b>${cap}</b></span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </div>`;
+  }).join("");
+}
+
+/* 智能派单：贪心分配，优先剩余多的账号，尽量少占号 */
+function buildPlan(type,need){
+  const accs=DATA.accounts.filter(a=>a.type===type&&a.used<QUOTA)
+    .map(a=>({acc:a,left:QUOTA-a.used}))
+    .sort((x,y)=>y.left-x.left);
+  const plan=[];let remaining=need;
+  for(const it of accs){
+    if(remaining<=0)break;
+    const give=Math.min(it.left,remaining);
+    plan.push({accId:it.acc.id,name:it.acc.name,taskId:taskIdOf(it.acc),before:it.acc.used,give});
+    remaining-=give;
+  }
+  return {plan,assigned:need-remaining,shortfall:remaining};
+}
+
+function renderPlan(type,need){
+  const {plan,assigned,shortfall}=buildPlan(type,need);
+  currentPlan={type,plan,assigned};
+  const panel=document.getElementById("plan");
+  const sum=document.getElementById("planSummary");
+  const body=document.getElementById("planBody");
+  if(!plan.length){
+    panel.classList.add("show");
+    sum.innerHTML=`<span class="pill warn">该类型今日已无可用额度</span>`;
+    body.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">没有可分配的账号</td></tr>`;
+    document.getElementById("copyBox").classList.remove("show");
+    return;
+  }
+  panel.classList.add("show");
+  sum.innerHTML=
+    `<span class="pill ok">已为 ${TYPES[type]} 分配 ${assigned} 条 / 共 ${plan.length} 个账号</span>`+
+    (shortfall>0?`<span class="pill warn">额度不足，还差 ${shortfall} 条无法分配</span>`:``);
+  body.innerHTML=plan.map(p=>`<tr>
+    <td class="anum">${p.name}</td>
+    <td class="tid">${p.taskId}</td>
+    <td class="assign">+${p.give}</td>
+    <td class="after">${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' · 满':''}</td>
+  </tr>`).join("");
+  document.getElementById("copyBox").classList.remove("show");
+}
+
+function confirmPlan(){
+  if(!currentPlan||!currentPlan.plan.length)return;
+  currentPlan.plan.forEach(p=>{
+    const a=DATA.accounts.find(x=>x.id===p.accId);
+    if(a)a.used=Math.min(QUOTA,a.used+p.give);
+  });
+  save(DATA);
+  toast(`已执行派单：${TYPES[currentPlan.type]} 共 ${currentPlan.assigned} 条`);
+  document.getElementById("plan").classList.remove("show");
+  currentPlan=null;
+  renderAll();updateHint();
+}
+
+function planText(){
+  if(!currentPlan)return"";
+  let s=`【红果派单 · ${TYPES[currentPlan.type]} · 共${currentPlan.assigned}条 · ${todayStr()}】\n`;
+  currentPlan.plan.forEach((p,i)=>{s+=`${i+1}. ${p.name}  任务${p.taskId}  上传 ${p.give} 条\n`;});
+  return s.trim();
+}
+
+function updateHint(){
+  const remain=typeRemaining(dispatchType);
+  const cls=dispatchType;
+  document.getElementById("dHint").innerHTML=`${TYPES[dispatchType]} 当前剩余 <b class="${cls}">${remain}</b> 条可分配`;
+}
+
+/* 账号明细 */
+function renderAccounts(){
+  const grid=document.getElementById("accGrid");
+  let list=DATA.accounts.slice();
+  if(curType!=="all")list=list.filter(a=>a.type===curType);
+  if(curSearch){
+    const q=curSearch.toLowerCase();
+    list=list.filter(a=>a.name.toLowerCase().includes(q)||taskIdOf(a).includes(q));
+  }
+  list.sort((a,b)=>(a.used-b.used)||a.name.localeCompare(b.name,"zh"));
+  document.getElementById("accCount").textContent=list.length;
+  if(!list.length){grid.innerHTML='<div class="empty">没有匹配的账号</div>';return;}
+  grid.innerHTML=list.map(a=>{
+    const full=a.used>=QUOTA;
+    const left=QUOTA-a.used;
+    const pct=Math.min(100,Math.round(a.used/QUOTA*100));
+    const opts=DATA.tasks.filter(t=>t.type===a.type)
+      .map(t=>`<option value="${t.id}" ${t.id===a.taskId?"selected":""}>${t.taskId}</option>`).join("");
+    return `<div class="card ${full?"full":""}" data-id="${a.id}">
+      <button class="del" data-del="${a.id}" title="删除账号">✕</button>
+      <div class="row1">
+        <div class="name" title="${a.name}">${a.name}</div>
+        <span class="type-badge ${TYPE_CLASS[a.type]}">${TYPES[a.type]}</span>
+      </div>
+      <div class="task">任务 <select data-task="${a.id}">${opts}</select></div>
+      <div class="progress ${full?"full":""}"><i style="width:${pct}%"></i></div>
+      <div class="meter">
+        <span class="used ${full?"full":""}">${a.used}/${QUOTA}</span>
+        ${full?'<span class="status no">已满</span>':`<span class="left">剩 ${left} 条</span>`}
+      </div>
+      <div class="acts">
+        <button class="btn primary" data-up="${a.id}" ${full?"disabled":""}>+1</button>
+        <button class="btn" data-down="${a.id}" ${a.used<=0?"disabled":""}>−1</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderTasks(){
+  const grid=document.getElementById("taskGrid");
+  let list=DATA.tasks.slice();
+  if(curType!=="all")list=list.filter(t=>t.type===curType);
+  document.getElementById("taskCount").textContent=list.length;
+  if(!list.length){grid.innerHTML='<div class="empty">该类型暂无任务</div>';return;}
+  grid.innerHTML=list.map(t=>{
+    const accs=DATA.accounts.filter(a=>a.taskId===t.id);
+    const used=accs.reduce((s,a)=>s+a.used,0);
+    const cap=accs.length*QUOTA;
+    const remain=cap-used;
+    return `<div class="task-card">
+      <div class="tid"><span class="type-badge ${TYPE_CLASS[t.type]}">${TYPES[t.type]}</span>${t.taskId}</div>
+      <div class="meta">绑定账号 <b>${accs.length}</b> · 今日 <b>${used}/${cap}</b> · 剩余 <b style="color:var(--green)">${remain}</b> 条</div>
+    </div>`;
+  }).join("");
+}
+
+function renderAll(){renderTypeStats();renderAccounts();renderTasks();}
+
+/* 派单交互 */
+document.getElementById("dType").addEventListener("click",e=>{
+  const o=e.target.closest(".opt");if(!o)return;
+  document.querySelectorAll("#dType .opt").forEach(x=>x.classList.remove("on"));
+  o.classList.add("on");dispatchType=o.dataset.t;updateHint();
+  document.getElementById("plan").classList.remove("show");currentPlan=null;
+});
+document.getElementById("doDispatch").onclick=()=>{
+  const need=parseInt(document.getElementById("dNum").value,10);
+  if(!need||need<1){toast("请输入需要上传的条数");return;}
+  renderPlan(dispatchType,need);
+};
+document.getElementById("confirmPlan").onclick=confirmPlan;
+document.getElementById("cancelPlan").onclick=()=>{document.getElementById("plan").classList.remove("show");currentPlan=null;};
+document.getElementById("copyPlan").onclick=()=>{
+  const box=document.getElementById("copyBox");const txt=planText();
+  box.textContent=txt;box.classList.add("show");
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast("派单清单已复制")).catch(()=>toast("已生成清单，可手动复制"));}
+  else toast("已生成清单，可手动复制");
+};
+
+/* 筛选/搜索 */
+document.getElementById("tabs").addEventListener("click",e=>{
+  const t=e.target.closest(".tab");if(!t)return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");curType=t.dataset.type;renderAccounts();renderTasks();
+});
+document.getElementById("search").addEventListener("input",e=>{curSearch=e.target.value.trim();renderAccounts();});
+
+/* 账号手动 +1/-1/删除/改任务 */
+document.getElementById("accGrid").addEventListener("click",e=>{
+  const up=e.target.dataset.up,down=e.target.dataset.down,del=e.target.dataset.del;
+  if(up){const a=DATA.accounts.find(x=>x.id===up);if(a&&a.used<QUOTA){a.used++;save(DATA);toast(`「${a.name}」+1，${a.used}/${QUOTA}`);renderAll();updateHint();}}
+  else if(down){const a=DATA.accounts.find(x=>x.id===down);if(a&&a.used>0){a.used--;save(DATA);toast(`「${a.name}」−1，${a.used}/${QUOTA}`);renderAll();updateHint();}}
+  else if(del){if(confirm("确认删除该账号？")){DATA.accounts=DATA.accounts.filter(x=>x.id!==del);save(DATA);renderAll();updateHint();}}
+});
+document.getElementById("accGrid").addEventListener("change",e=>{
+  const tid=e.target.dataset.task;
+  if(tid){const a=DATA.accounts.find(x=>x.id===tid);if(a){a.taskId=e.target.value;save(DATA);renderTasks();toast("任务已重新绑定");}}
+});
+
+/* 新增账号 */
+function fillAccTask(){
+  const type=document.getElementById("accType").value;
+  const ts=DATA.tasks.filter(t=>t.type===type);
+  document.getElementById("accTask").innerHTML=ts.length?ts.map(t=>`<option value="${t.id}">${t.taskId}</option>`).join(""):'<option value="">（该类型暂无任务，请先建任务）</option>';
+}
+document.getElementById("addAccountBtn").onclick=()=>{fillAccTask();document.getElementById("accModal").classList.add("show");};
+document.getElementById("accType").onchange=fillAccTask;
+document.getElementById("accSave").onclick=()=>{
+  const name=document.getElementById("accName").value.trim();
+  const type=document.getElementById("accType").value;
+  const taskId=document.getElementById("accTask").value;
+  if(!name){toast("请填写账号名称");return;}
+  if(!taskId){toast("该类型暂无任务，请先新增任务");return;}
+  DATA.accounts.push({id:uid(),name,type,taskId,used:0,createdAt:Date.now()});
+  save(DATA);renderAll();updateHint();closeModal();toast(`已新增账号「${name}」`);
+};
+/* 新增任务 */
+document.getElementById("addTaskBtn").onclick=()=>document.getElementById("taskModal").classList.add("show");
+document.getElementById("taskSave").onclick=()=>{
+  const id=document.getElementById("taskId").value.trim();
+  const type=document.getElementById("taskType").value;
+  if(!id){toast("请填写任务ID");return;}
+  if(DATA.tasks.some(t=>t.taskId===id&&t.type===type)){toast("该类型下任务ID已存在");return;}
+  DATA.tasks.push({id:uid(),taskId:id,type});save(DATA);renderAll();closeModal();toast("已新增任务");
+};
+/* 重置 */
+document.getElementById("resetBtn").onclick=()=>{
+  if(confirm("确认将所有账号今日上传计数清零？")){
+    DATA.accounts.forEach(a=>a.used=0);DATA.lastResetDate=todayStr();save(DATA);renderAll();updateHint();toast("今日计数已刷新");
+  }
+};
+function closeModal(){document.querySelectorAll(".modal-mask").forEach(m=>m.classList.remove("show"));
+  document.getElementById("accName").value="";document.getElementById("taskId").value="";}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModal);
+document.querySelectorAll(".modal-mask").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal();}));
+
+renderAll();updateHint();
+</script>
+</body>
+</html>

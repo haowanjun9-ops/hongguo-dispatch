@@ -1,0 +1,11 @@
+{
+  "name": "hongguo-dispatch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "红果素材分发平台 - 多人实时共享版",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}

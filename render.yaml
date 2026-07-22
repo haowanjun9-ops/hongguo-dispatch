@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: hongguo-dispatch
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: PORT
+        value: "3000"
+      - key: DATA_DIR
+        value: "/data"
+      - key: PASSCODE
+        sync: false
+        generateValue: true
+    # 持久盘：挂载到 /data，保证 data.json（账号/任务/每日计数）在重启后不丢。
+    # 注意：Render 持久盘需要付费实例；若用免费实例，重启会重置为初始种子数据。
+    disk:
+      name: hongguo-data
+      mountPath: /data
+      sizeGB: 1

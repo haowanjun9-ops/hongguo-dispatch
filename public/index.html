@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红果素材分发</title>
+<style>
+:root{
+  --bg:#f4f6fb; --panel:#fff; --text:#1f2933; --muted:#7b8494;
+  --border:#e6e9f0; --green:#15a34a; --green-bg:#e7f8ee; --blue:#2563eb; --blue-bg:#e8efff;
+  --purple:#7c3aed; --purple-bg:#f1ebfe; --red:#dc2626; --shadow:0 1px 3px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:18px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+header h1{font-size:21px;font-weight:800;display:flex;align-items:center;gap:8px}
+header .live{font-size:12px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:5px}
+header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.share{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px 6px 6px 12px;box-shadow:var(--shadow)}
+.share input{border:none;outline:none;font-size:12px;color:var(--muted);width:200px;background:transparent}
+.share button{border:none;background:var(--blue);color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.card.real .bar{background:var(--green)} .card.ai .bar{background:var(--blue)} .card.second .bar{background:var(--purple)}
+.card .t{font-weight:800;font-size:15px}
+.card .n{font-size:30px;font-weight:800;margin-top:6px}
+.card.real .n{color:var(--green)} .card.ai .n{color:var(--blue)} .card.second .n{color:var(--purple)}
+.card .n small{font-size:13px;color:var(--muted);font-weight:600}
+.card .s{font-size:12px;color:var(--muted);margin-top:4px}
+
+.dispatch{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.dispatch .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.seg{display:flex;gap:6px}
+.seg .o{padding:9px 16px;border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);background:#fff}
+.seg .o.on[data-t=real]{background:var(--green);color:#fff;border-color:var(--green)}
+.seg .o.on[data-t=ai]{background:var(--blue);color:#fff;border-color:var(--blue)}
+.seg .o.on[data-t=second]{background:var(--purple);color:#fff;border-color:var(--purple)}
+.num{display:flex;flex-direction:column;gap:5px}
+.num label{font-size:12px;font-weight:700;color:var(--muted)}
+.num input{width:110px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:700;outline:none}
+.go{border:none;background:var(--blue);color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+.go:hover{background:#1d4ed8}
+.hint{margin-left:auto;font-size:12px;color:var(--muted)}
+.hint b{font-size:14px}
+
+.result{margin-top:14px;display:none}
+.result.show{display:block}
+.result .pill{padding:5px 12px;border-radius:20px;font-weight:700;font-size:13px;display:inline-block;margin-bottom:10px}
+.result .pill.ok{background:var(--green-bg);color:var(--green)}
+.result .pill.warn{background:#fef3c7;color:var(--amber,#b45309)}
+.result table{width:100%;border-collapse:collapse;font-size:13px}
+.result th{text-align:left;color:var(--muted);font-size:12px;font-weight:700;padding:7px 8px;border-bottom:2px solid var(--border)}
+.result td{padding:8px;border-bottom:1px solid var(--border)}
+.result .as{font-weight:800;color:var(--blue);font-size:15px}
+.result .tid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+
+.tabs{display:flex;gap:8px;margin:6px 0 12px}
+.tab{padding:8px 16px;border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);background:#fff}
+.tab.on{background:var(--text);color:#fff;border-color:var(--text)}
+.tab .c{opacity:.6;font-weight:600}
+
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.acc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);position:relative}
+.acc.full{opacity:.55}
+.acc .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.acc .nm{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.tag.real{background:var(--green-bg);color:var(--green)} .tag.ai{background:var(--blue-bg);color:var(--blue)} .tag.second{background:var(--purple-bg);color:var(--purple)}
+.acc .tk{font-size:11px;color:var(--muted);margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.acc .bar{height:7px;border-radius:5px;background:var(--border);margin-top:8px;overflow:hidden}
+.acc .bar>i{display:block;height:100%;background:var(--green);border-radius:5px}
+.acc .bar.full>i{background:var(--red)}
+.acc .mt{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px}
+.acc .lf{font-weight:700;color:var(--green)} .acc .mt .st{font-weight:800}
+.acc .bt{display:flex;gap:6px;margin-top:10px}
+.acc .bt button{flex:1;border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px;font-size:12px;font-weight:700;cursor:pointer}
+.acc .bt .p{color:var(--blue)} .acc .bt .p:hover{background:var(--blue-bg)}
+.acc .bt button:disabled{opacity:.4;cursor:not-allowed}
+.acc .x{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-size:12px;display:none;align-items:center;justify-content:center}
+.acc:hover .x{display:flex}
+.acc .x:hover{background:#fee2e2;color:var(--red);border-color:#fca5a5}
+
+.tsk{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow)}
+.tsk .id{font-weight:700;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;display:flex;align-items:center;gap:6px}
+.tsk .m{font-size:12px;color:var(--muted);margin-top:5px}
+.tsk .m b{color:var(--text)}
+
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:20px;flex-wrap:wrap;gap:10px}
+.foot .act{display:flex;gap:8px}
+.foot button{border:1px solid var(--border);background:#fff;color:var(--text);padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+.foot button.danger{color:var(--red);border-color:#fca5a5}
+.foot .upd{font-size:11px;color:var(--muted)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1f2933;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:99}
+.toast.show{opacity:1}
+.empty{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+@media(max-width:680px){.cards{grid-template-columns:1fr}.share input{width:130px}.hint{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📦 红果素材分发</h1>
+      <div class="live"><span class="d"></span><span id="liveTxt">实时同步中</span></div>
+    </div>
+    <div class="share">
+      <input id="link" readonly>
+      <button id="copyLink">复制分享链接</button>
+    </div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="dispatch">
+    <div class="row">
+      <div class="seg" id="dType">
+        <div class="o on" data-t="real">真人</div>
+        <div class="o" data-t="ai">AI</div>
+        <div class="o" data-t="second">二剪</div>
+      </div>
+      <div class="num"><label>需要条数</label><input type="number" id="dNum" min="1" value="10"></div>
+      <button class="go" id="go">⚡ 自动分配</button>
+      <div class="hint" id="hint"></div>
+    </div>
+    <div class="result" id="result">
+      <div id="rPill"></div>
+      <table><thead><tr><th>账号</th><th>任务 ID</th><th>本次</th><th>分配后</th></tr></thead><tbody id="rBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="acc">账号 <span class="c" id="cAcc">0</span></div>
+    <div class="tab" data-t="task">任务 <span class="c" id="cTask">0</span></div>
+  </div>
+  <div class="list" id="list"></div>
+
+  <div class="foot">
+    <div class="upd" id="upd"></div>
+    <div class="act">
+      <button id="addAcc">+ 账号</button>
+      <button id="addTask">+ 任务</button>
+      <button class="danger" id="reset">↻ 刷新今日</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-mask" id="m" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:20px;width:330px;max-width:92vw">
+    <h3 id="mTitle" style="font-size:16px;margin-bottom:14px">新增</h3>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--muted)">名称 / 任务ID</label><input id="mVal" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none"></div>
+    <div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted)">类型</label>
+      <select id="mType" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none">
+        <option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option>
+      </select></div>
+    <div style="display:flex;gap:10px"><button id="mCancel" style="flex:1;padding:9px;border:1px solid var(--border);background:#fff;border-radius:9px;font-weight:700;cursor:pointer">取消</button><button id="mOk" style="flex:1;padding:9px;border:none;background:var(--blue);color:#fff;border-radius:9px;font-weight:700;cursor:pointer">保存</button></div>
+  </div>
+</div>
+
+<script>
+const QUOTA=6, TYPES={real:'真人',ai:'AI',second:'二剪'}, TC={real:'tag-real',ai:'tag-ai',second:'tag-second'};
+let S=null, dispType='real', PW='';
+function authH(){return PW?{'x-passcode':PW}:{};}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
+function remaining(type){return S.accounts.filter(a=>a.type===type).reduce((s,a)=>s+(QUOTA-a.used),0);}
+
+function render(){
+  if(!S)return;
+  // 类型卡片
+  document.getElementById('cards').innerHTML=Object.keys(TYPES).map(type=>{
+    const accs=S.accounts.filter(a=>a.type===type);
+    const cap=accs.length*QUOTA, used=accs.reduce((s,a)=>s+a.used,0), rem=cap-used;
+    const avail=accs.filter(a=>a.used<QUOTA).length;
+    const pct=cap?Math.round(used/cap*100):0;
+    return `<div class="card ${type}"><span class="bar"></span>
+      <div class="t">${TYPES[type]}</div>
+      <div class="n">${rem}<small> 条剩余</small></div>
+      <div class="s">可用 ${avail} 号 · 已传 ${used}/${cap}</div>
+      <div class="s">总容量 ${cap}（${Math.round(pct)}% 已用）</div></div>`;
+  }).join('');
+  // 提示
+  document.getElementById('hint').innerHTML=`${TYPES[dispType]} 当前剩余 <b style="color:${dispType==='real'?'var(--green)':dispType==='ai'?'var(--blue)':'var(--purple)'}">${remaining(dispType)}</b> 条`;
+  // 列表
+  const tab=document.querySelector('.tab.on').dataset.t;
+  document.getElementById('cAcc').textContent=S.accounts.length;
+  document.getElementById('cTask').textContent=S.tasks.length;
+  if(tab==='acc'){
+    const list=S.accounts.slice().sort((a,b)=>(a.used-b.used)||a.name.localeCompare(b.name,'zh'));
+    document.getElementById('list').innerHTML=list.map(a=>{
+      const full=a.used>=QUOTA, lf=QUOTA-a.used, pct=Math.min(100,Math.round(a.used/QUOTA*100));
+      return `<div class="acc ${full?'full':''}">
+        <button class="x" data-del="${a.id}">✕</button>
+        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag ${TC[a.type]}">${TYPES[a.type]}</span></div>
+        <div class="tk">任务 ${taskIdOf(a.taskId)}</div>
+        <div class="bar ${full?'full':''}"><i style="width:${pct}%"></i></div>
+        <div class="mt"><span class="lf">剩 ${lf} 条</span><span class="st">${a.used}/${QUOTA}</span></div>
+        <div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${a.used<=0?'disabled':''}>−1</button></div>
+      </div>`;
+    }).join('');
+  }else{
+    document.getElementById('list').innerHTML=S.tasks.map(t=>{
+      const accs=S.accounts.filter(a=>a.taskId===t.id);
+      const used=accs.reduce((s,a)=>s+a.used,0), cap=accs.length*QUOTA, rem=cap-used;
+      return `<div class="tsk"><div class="id"><span class="tag ${TC[t.type]}">${TYPES[t.type]}</span>${t.taskId}</div>
+        <div class="m">绑定 ${accs.length} 号 · 今日 ${used}/${cap} · 剩余 <b style="color:var(--green)">${rem}</b></div></div>`;
+    }).join('')||'<div class="empty">暂无任务</div>';
+  }
+  document.getElementById('upd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
+}
+
+// SSE 实时同步
+function connect(){
+  const es=new EventSource('/api/events');
+  es.onmessage=e=>{try{S=JSON.parse(e.data);render();document.getElementById('liveTxt').textContent='实时同步中';document.getElementById('liveTxt').style.color='var(--green)';}catch(err){}};
+  es.onerror=()=>{document.getElementById('liveTxt').textContent='连接断开，重连中…';document.getElementById('liveTxt').style.color='var(--red)';};
+}
+fetch('/api/state').then(r=>r.json()).then(d=>{
+  S=d;
+  if(d.needPasscode && !PW){
+    const v=prompt('请输入访问密码（由管理员提供）：');
+    if(v){PW=v;
+      // 用密码重新拉取一次
+      return fetch('/api/state',{headers:authH()}).then(r=>r.json()).then(d2=>{S=d2;render();connect();});
+    }
+  }
+  render();connect();
+});
+
+// 派单
+document.getElementById('dType').addEventListener('click',e=>{const o=e.target.closest('.o');if(!o)return;
+  document.querySelectorAll('#dType .o').forEach(x=>x.classList.remove('on'));o.classList.add('on');dispType=o.dataset.t;render();});
+document.getElementById('go').onclick=async()=>{
+  const need=parseInt(document.getElementById('dNum').value,10);
+  if(!need||need<1){toast('请输入条数');return;}
+  const r=await fetch('/api/dispatch',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({type:dispType,need})}).then(x=>x.json());
+  if(!r.plan){return;}
+  document.getElementById('result').classList.add('show');
+  document.getElementById('rPill').innerHTML=
+    `<span class="pill ok">${TYPES[dispType]} 已分配 ${r.assigned} 条 / ${r.plan.length} 个账号</span>`+
+    (r.shortfall>0?` <span class="pill warn">额度不足，还差 ${r.shortfall} 条</span>`:'');
+  document.getElementById('rBody').innerHTML=r.plan.map(p=>`<tr>
+    <td style="font-weight:700">${p.name}</td><td class="tid">${p.taskId}</td>
+    <td class="as">+${p.give}</td><td>${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' 满':''}</td></tr>`).join('');
+  toast('已自动分配并保存');
+};
+// 列表交互
+document.getElementById('list').addEventListener('click',async e=>{
+  const inc=e.target.dataset.inc,dec=e.target.dataset.dec,del=e.target.dataset.del;
+  if(inc){await fetch('/api/inc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:inc})});}
+  else if(dec){await fetch('/api/dec',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:dec})});}
+  else if(del){if(confirm('删除该账号？')){await fetch('/api/account/'+del,{method:'DELETE',headers:authH()});}}
+});
+document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');render();});
+// 弹窗
+let mMode='acc';
+function openM(mode){mMode=mode;document.getElementById('mTitle').textContent=mode==='acc'?'新增账号':'新增任务';
+  document.getElementById('mVal').value='';document.getElementById('m').style.display='flex';document.getElementById('mVal').focus();}
+document.getElementById('addAcc').onclick=()=>openM('acc');
+document.getElementById('addTask').onclick=()=>openM('task');
+document.getElementById('mCancel').onclick=()=>document.getElementById('m').style.display='none';
+document.getElementById('mOk').onclick=async()=>{
+  const val=document.getElementById('mVal').value.trim(),type=document.getElementById('mType').value;
+  if(!val){toast('请填写内容');return;}
+  if(mMode==='acc'){await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({name:val,type,taskId:S.tasks.find(t=>t.type===type)?.id||''})});}
+  else{const r=await fetch('/api/task',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({taskId:val,type})});if(r.status===400){toast('该类型任务已存在');return;}}
+  document.getElementById('m').style.display='none';toast('已添加');
+};
+document.getElementById('reset').onclick=async()=>{if(confirm('清零今日所有计数？')){await fetch('/api/reset',{method:'POST',headers:authH()});toast('已刷新今日');}};
+// 分享链接
+document.getElementById('link').value=location.origin+'/';
+document.getElementById('copyLink').onclick=()=>{const i=document.getElementById('link');i.select();
+  if(navigator.clipboard){navigator.clipboard.writeText(i.value).then(()=>toast('链接已复制，发给同事即可')).catch(()=>{});}else{document.execCommand('copy');toast('链接已复制');}};
+</script>
+</body>
+</html>

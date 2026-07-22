@@ -7,7 +7,8 @@ const PORT = process.env.PORT || 3000;
 const QUOTA = 6;
 const TYPES = { real: '真人', ai: 'AI', second: '二剪' };
 const STORE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
-const PASSCODE = process.env.PASSCODE || ''; // 设置后，所有写操作需带 x-passcode 头
+const PASSCODE = process.env.PASSCODE || '';        // 普通用户密码（只读 + 派单）
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || PASSCODE; // 管理员密码；未单独设置时退化为等于 PASSCODE
 
 const SEED = {
   real: {
@@ -55,7 +56,14 @@ function ensureFresh() {
 }
 function taskIdOf(id) { const t = state.tasks.find(x => x.id === id); return t ? t.taskId : '—'; }
 function log(type, text) { state.logs.unshift({ ts: Date.now(), type, text }); if (state.logs.length > 60) state.logs.length = 60; }
-function checkAuth(req) { if (!PASSCODE) return true; return (req.headers['x-passcode'] || '') === PASSCODE; }
+// 角色判定：admin=管理员（全部权限） user=普通用户（只读+派单） null=未授权
+function roleOfPass(p) {
+  if (!PASSCODE && !ADMIN_PASSCODE) return 'admin'; // 未设任何密码：开放模式，视为管理员
+  if (ADMIN_PASSCODE && p === ADMIN_PASSCODE) return 'admin';
+  if (PASSCODE && p === PASSCODE) return 'user';
+  return null;
+}
+function roleOfHeader(req) { return roleOfPass(req.headers['x-passcode'] || ''); }
 function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks, logs: state.logs }; }
 function typeRemaining(type) { return state.accounts.filter(a => a.type === type).reduce((s, a) => s + (QUOTA - a.used), 0); }
 
@@ -116,8 +124,15 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    if (!checkAuth(req)) return send(res, 403, { error: '需要访问密码' });
     const body = await readBody(req);
+    if (url === '/api/auth') {
+      const role = roleOfPass(body.passcode || '');
+      if (!role) return send(res, 401, { ok: false });
+      return send(res, 200, { ok: true, role });
+    }
+    const role = roleOfHeader(req);
+    if (!role) return send(res, 403, { error: '需要访问密码' });
+    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
     if (url === '/api/dispatch') {
       const need = parseInt(body.need, 10);
       const type = body.type;
@@ -166,7 +181,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'DELETE' && url.startsWith('/api/account/')) {
-    if (!checkAuth(req)) return send(res, 403, { error: '需要访问密码' });
+    const role = roleOfHeader(req);
+    if (!role) return send(res, 403, { error: '需要访问密码' });
+    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
     const id = url.split('/').pop();
     state.accounts = state.accounts.filter(x => x.id !== id);
     saveState(); broadcast();
@@ -180,7 +197,9 @@ loadState();
 setInterval(ensureFresh, 60000); // 每分钟检查跨天
 server.listen(PORT, () => {
   console.log('红果素材分发平台已启动');
-  if (PASSCODE) console.log('  访问密码(PASSCODE): ' + PASSCODE + '  （已开启写保护）');
+  if (PASSCODE) console.log('  用户密码(PASSCODE): ' + PASSCODE + '  （只读 + 派单）');
+  if (ADMIN_PASSCODE && ADMIN_PASSCODE !== PASSCODE) console.log('  管理密码(ADMIN_PASSCODE): ' + ADMIN_PASSCODE + '  （可增删账号/任务）');
+  else if (PASSCODE) console.log('  未单独设置 ADMIN_PASSCODE，当前 PASSCODE 同时是管理员密码');
   console.log('  本机:  http://localhost:' + PORT);
   const ifs = os.networkInterfaces();
   for (const k of Object.keys(ifs)) {

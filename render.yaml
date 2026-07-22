@@ -12,8 +12,12 @@ services:
         value: "22"
       - key: PORT
         value: "3000"
-      # Render 自动生成一个随机访问密码；部署后可在 Dashboard → Environment 里查看/修改。
+      # 普通用户密码：只读 + 派单。Render 自动生成随机值，部署后可在 Environment 里修改。
       - key: PASSCODE
         generateValue: true
+      # 管理员密码：可增删账号/任务、±1、刷新。建议单独设一个值（与 PASSCODE 不同）。
+      # 不填则退化等于 PASSCODE（此时 PASSCODE 同时是管理员密码）。
+      - key: ADMIN_PASSCODE
+        sync: false
     # 注意：免费实例不带持久盘，每次重新部署/重启后 data.json 会重置为初始种子数据。
     # 若要持久保存，请把实例升到付费计划，并在此文件里加 disk 配置（DATA_DIR=/data）。

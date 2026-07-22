@@ -20,6 +20,11 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .share{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px 6px 6px 12px;box-shadow:var(--shadow)}
 .share input{border:none;outline:none;font-size:12px;color:var(--muted);width:200px;background:transparent}
 .share button{border:none;background:var(--blue);color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.role-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px}
+.role-badge.admin{background:#fef3c7;color:#b45309}
+.role-badge.viewer{background:#e5e7eb;color:#4b5563}
+.logout{border:none;background:var(--muted);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.viewer-note{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px}
 
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
@@ -104,17 +109,18 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
   <header>
     <div>
       <h1>📦 红果素材分发</h1>
-      <div class="live"><span class="d"></span><span id="liveTxt">实时同步中</span></div>
+      <div class="live"><span class="d"></span><span id="liveTxt">实时同步中</span> <span id="roleBadge" class="role-badge" style="display:none"></span></div>
     </div>
     <div class="share">
       <input id="link" readonly>
       <button id="copyLink">复制分享链接</button>
+      <button id="logout" class="logout" style="display:none">退出</button>
     </div>
   </header>
 
   <div class="cards" id="cards"></div>
 
-  <div class="dispatch">
+  <div class="dispatch" id="dispatchBox">
     <div class="row">
       <div class="seg" id="dType">
         <div class="o on" data-t="real">真人</div>
@@ -130,6 +136,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
       <table><thead><tr><th>账号</th><th>任务 ID</th><th>本次</th><th>分配后</th></tr></thead><tbody id="rBody"></tbody></table>
     </div>
   </div>
+  <div class="viewer-note" id="viewerNote" style="display:none">🔒 当前为只读视图：仅管理员可派单与增删账号/任务。如需操作，请用管理员密码重新登录（右上角「退出」后重输）。</div>
 
   <div class="tabs">
     <div class="tab on" data-t="acc">账号 <span class="c" id="cAcc">0</span></div>
@@ -162,7 +169,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 
 <script>
 const QUOTA=6, TYPES={real:'真人',ai:'AI',second:'二剪'}, TC={real:'tag-real',ai:'tag-ai',second:'tag-second'};
-let S=null, dispType='real', PW='';
+let S=null, dispType='real', PW='', ROLE=null;
 function authH(){return PW?{'x-passcode':PW}:{};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
@@ -188,17 +195,18 @@ function render(){
   const tab=document.querySelector('.tab.on').dataset.t;
   document.getElementById('cAcc').textContent=S.accounts.length;
   document.getElementById('cTask').textContent=S.tasks.length;
+  const admin=ROLE==='admin';
   if(tab==='acc'){
     const list=S.accounts.slice().sort((a,b)=>(a.used-b.used)||a.name.localeCompare(b.name,'zh'));
     document.getElementById('list').innerHTML=list.map(a=>{
       const full=a.used>=QUOTA, lf=QUOTA-a.used, pct=Math.min(100,Math.round(a.used/QUOTA*100));
       return `<div class="acc ${full?'full':''}">
-        <button class="x" data-del="${a.id}">✕</button>
+        ${admin?`<button class="x" data-del="${a.id}">✕</button>`:''}
         <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag ${TC[a.type]}">${TYPES[a.type]}</span></div>
         <div class="tk">任务 ${taskIdOf(a.taskId)}</div>
         <div class="bar ${full?'full':''}"><i style="width:${pct}%"></i></div>
         <div class="mt"><span class="lf">剩 ${lf} 条</span><span class="st">${a.used}/${QUOTA}</span></div>
-        <div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${a.used<=0?'disabled':''}>−1</button></div>
+        ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${a.used<=0?'disabled':''}>−1</button></div>`:''}
       </div>`;
     }).join('');
   }else{
@@ -212,32 +220,58 @@ function render(){
   document.getElementById('upd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
 }
 
+// 按角色显隐界面
+function applyRole(){
+  const admin=ROLE==='admin';
+  const badge=document.getElementById('roleBadge');
+  badge.style.display='inline-block';
+  badge.textContent=admin?'👑 管理员':'👁 只读';
+  badge.className='role-badge '+(admin?'admin':'viewer');
+  document.getElementById('dispatchBox').style.display=admin?'':'none';
+  document.getElementById('viewerNote').style.display=admin?'none':'block';
+  document.getElementById('addAcc').style.display=admin?'':'none';
+  document.getElementById('addTask').style.display=admin?'':'none';
+  document.getElementById('reset').style.display=admin?'':'none';
+  document.getElementById('logout').style.display=(ROLE&&PW)?'inline-block':'none';
+  render();
+}
+
 // SSE 实时同步
 function connect(){
   const es=new EventSource('/api/events');
   es.onmessage=e=>{try{S=JSON.parse(e.data);render();document.getElementById('liveTxt').textContent='实时同步中';document.getElementById('liveTxt').style.color='var(--green)';}catch(err){}};
   es.onerror=()=>{document.getElementById('liveTxt').textContent='连接断开，重连中…';document.getElementById('liveTxt').style.color='var(--red)';};
 }
-fetch('/api/state').then(r=>r.json()).then(d=>{
-  S=d;
-  if(d.needPasscode && !PW){
-    const v=prompt('请输入访问密码（由管理员提供）：');
-    if(v){PW=v;
-      // 用密码重新拉取一次
-      return fetch('/api/state',{headers:authH()}).then(r=>r.json()).then(d2=>{S=d2;render();connect();});
-    }
-  }
-  render();connect();
-});
+function start(){connect();applyRole();}
 
-// 派单
+// 登录：拉状态 → 如需密码则弹窗 → 校验角色
+fetch('/api/state').then(r=>r.json()).then(async d=>{
+  S=d;
+  if(!d.needPasscode){ ROLE='admin'; PW=''; start(); return; } // 开放模式
+  PW=localStorage.getItem('hg_pw')||'';
+  ROLE=localStorage.getItem('hg_role')||null;
+  if(!PW){ PW=prompt('请输入访问密码（管理员请使用管理密码）：')||''; }
+  if(PW){
+    const a=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passcode:PW})}).then(x=>x.json());
+    if(a.ok){ROLE=a.role;localStorage.setItem('hg_pw',PW);localStorage.setItem('hg_role',ROLE);}
+    else{PW='';ROLE=null;alert('密码错误');}
+  }
+  start();
+}).catch(()=>{ document.getElementById('liveTxt').textContent='加载失败'; });
+
+// 退出登录
+document.getElementById('logout').onclick=()=>{
+  localStorage.removeItem('hg_pw');localStorage.removeItem('hg_role');location.reload();
+};
+
+// 派单（管理员）
 document.getElementById('dType').addEventListener('click',e=>{const o=e.target.closest('.o');if(!o)return;
   document.querySelectorAll('#dType .o').forEach(x=>x.classList.remove('on'));o.classList.add('on');dispType=o.dataset.t;render();});
 document.getElementById('go').onclick=async()=>{
   const need=parseInt(document.getElementById('dNum').value,10);
   if(!need||need<1){toast('请输入条数');return;}
   const r=await fetch('/api/dispatch',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({type:dispType,need})}).then(x=>x.json());
-  if(!r.plan){return;}
+  if(!r.plan){toast(r.error||'无权限');return;}
   document.getElementById('result').classList.add('show');
   document.getElementById('rPill').innerHTML=
     `<span class="pill ok">${TYPES[dispType]} 已分配 ${r.assigned} 条 / ${r.plan.length} 个账号</span>`+
@@ -247,8 +281,9 @@ document.getElementById('go').onclick=async()=>{
     <td class="as">+${p.give}</td><td>${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' 满':''}</td></tr>`).join('');
   toast('已自动分配并保存');
 };
-// 列表交互
+// 列表交互（管理员）
 document.getElementById('list').addEventListener('click',async e=>{
+  if(ROLE!=='admin')return;
   const inc=e.target.dataset.inc,dec=e.target.dataset.dec,del=e.target.dataset.del;
   if(inc){await fetch('/api/inc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:inc})});}
   else if(dec){await fetch('/api/dec',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify({id:dec})});}
@@ -256,9 +291,9 @@ document.getElementById('list').addEventListener('click',async e=>{
 });
 document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');render();});
-// 弹窗
+// 弹窗（管理员）
 let mMode='acc';
-function openM(mode){mMode=mode;document.getElementById('mTitle').textContent=mode==='acc'?'新增账号':'新增任务';
+function openM(mode){if(ROLE!=='admin')return;mMode=mode;document.getElementById('mTitle').textContent=mode==='acc'?'新增账号':'新增任务';
   document.getElementById('mVal').value='';document.getElementById('m').style.display='flex';document.getElementById('mVal').focus();}
 document.getElementById('addAcc').onclick=()=>openM('acc');
 document.getElementById('addTask').onclick=()=>openM('task');

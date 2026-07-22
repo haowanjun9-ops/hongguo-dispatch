@@ -184,7 +184,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 <script>
 const QUOTA=6, TYPES={real:'真人',ai:'AI',second:'二剪'}, TC={real:'tag-real',ai:'tag-ai',second:'tag-second'};
 let S=null, dispType='real', PW='', ROLE=null;
-function authH(){return PW?{'x-passcode':PW}:{};}
+function authH(){const h=PW?{'x-passcode':PW}:{};if(ROLE==='admin'){const n=localStorage.getItem('hg_name');if(n)h['x-admin-name']=n;}return h;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
 function remaining(type){return S.accounts.filter(a=>a.type===type).reduce((s,a)=>s+(QUOTA-a.used),0);}
@@ -242,7 +242,7 @@ function renderLogs(data){
   document.getElementById('logs').innerHTML = logs.slice(0,40).map(l=>{
     const t=new Date(l.ts);
     const hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0'),ss=String(t.getSeconds()).padStart(2,'0');
-    const who = l.role==='system'?'系统':'管理员';
+    const who = l.who || (l.role==='system'?'系统':'管理员');
     return `<div class="item"><span class="ts">${hh}:${mm}:${ss}</span><span class="who">${who}</span><span class="act logs-t-${l.type}">${actLabel(l.type)}</span><span class="txt">${l.text}</span></div>`;
   }).join('') || '<div class="item" style="color:var(--muted)">暂无操作记录</div>';
   document.getElementById('logUpd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
@@ -284,7 +284,12 @@ fetch('/api/state').then(r=>r.json()).then(async d=>{
   if(!PW){ PW=prompt('请输入访问密码（管理员请使用管理密码）：')||''; }
   if(PW){
     const a=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passcode:PW})}).then(x=>x.json());
-    if(a.ok){ROLE=a.role;localStorage.setItem('hg_pw',PW);localStorage.setItem('hg_role',ROLE);}
+    if(a.ok){ROLE=a.role;localStorage.setItem('hg_pw',PW);localStorage.setItem('hg_role',ROLE);
+      if(ROLE==='admin' && !localStorage.getItem('hg_name')){
+        const nm=prompt('请输入你的名字（用于操作日志，便于区分是谁操作的，如：张三）：')||'';
+        if(nm.trim()) localStorage.setItem('hg_name',nm.trim());
+      }
+    }
     else{PW='';ROLE=null;alert('密码错误');}
   }
   start();

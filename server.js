@@ -55,7 +55,7 @@ function ensureFresh() {
   }
 }
 function taskIdOf(id) { const t = state.tasks.find(x => x.id === id); return t ? t.taskId : '—'; }
-function log(type, text) { state.logs.unshift({ ts: Date.now(), type, text }); if (state.logs.length > 60) state.logs.length = 60; }
+function log(type, text, role) { state.logs.unshift({ ts: Date.now(), type, role: role || 'system', text }); if (state.logs.length > 80) state.logs.length = 80; }
 // 角色判定：admin=管理员（全部权限） user=普通用户（只读+派单） null=未授权
 function roleOfPass(p) {
   if (!PASSCODE && !ADMIN_PASSCODE) return 'admin'; // 未设任何密码：开放模式，视为管理员
@@ -64,7 +64,7 @@ function roleOfPass(p) {
   return null;
 }
 function roleOfHeader(req) { return roleOfPass(req.headers['x-passcode'] || ''); }
-function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks, logs: state.logs }; }
+function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks }; }
 function typeRemaining(type) { return state.accounts.filter(a => a.type === type).reduce((s, a) => s + (QUOTA - a.used), 0); }
 
 // 服务端原子分配：谁先请求谁先占，避免重复
@@ -82,7 +82,7 @@ function allocate(type, need) {
     remaining -= give;
   }
   const assigned = need - remaining;
-  if (assigned > 0) { log('dispatch', `派单 ${TYPES[type]} ${assigned} 条（${plan.length} 个账号）`); saveState(); broadcast(); }
+  if (assigned > 0) { log('dispatch', `派单 ${TYPES[type]} ${assigned} 条（${plan.length} 个账号）`, 'admin'); saveState(); broadcast(); }
   return { plan, assigned, shortfall: remaining };
 }
 
@@ -123,6 +123,13 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && url === '/api/logs') {
+    const role = roleOfHeader(req);
+    if (!role) return send(res, 403, { error: '需要访问密码' });
+    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
+    return send(res, 200, { logs: state.logs });
+  }
+
   if (req.method === 'POST') {
     const body = await readBody(req);
     if (url === '/api/auth') {
@@ -142,12 +149,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (url === '/api/inc') {
       const a = state.accounts.find(x => x.id === body.id);
-      if (a && a.used < QUOTA) { a.used++; log('inc', `「${a.name}」+1（${a.used}/${QUOTA}）`); saveState(); broadcast(); }
+      if (a && a.used < QUOTA) { a.used++; log('inc', `「${a.name}」+1（${a.used}/${QUOTA}）`, 'admin'); saveState(); broadcast(); }
       return send(res, 200, { ok: true });
     }
     if (url === '/api/dec') {
       const a = state.accounts.find(x => x.id === body.id);
-      if (a && a.used > 0) { a.used--; log('dec', `「${a.name}」−1（${a.used}/${QUOTA}）`); saveState(); broadcast(); }
+      if (a && a.used > 0) { a.used--; log('dec', `「${a.name}」−1（${a.used}/${QUOTA}）`, 'admin'); saveState(); broadcast(); }
       return send(res, 200, { ok: true });
     }
     if (url === '/api/account') {
@@ -156,7 +163,7 @@ const server = http.createServer(async (req, res) => {
       const taskId = body.taskId;
       if (!name || !TYPES[type] || !taskId) return send(res, 400, { error: '参数错误' });
       state.accounts.push({ id: uid(), name, type, taskId, used: 0, createdAt: Date.now() });
-      log('account', `新增账号「${name}」(${TYPES[type]})`); saveState(); broadcast();
+      log('account', `新增账号「${name}」(${TYPES[type]})`, 'admin'); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }
     if (url === '/api/task') {
@@ -165,7 +172,7 @@ const server = http.createServer(async (req, res) => {
       if (!id || !TYPES[type]) return send(res, 400, { error: '参数错误' });
       if (state.tasks.some(t => t.taskId === id && t.type === type)) return send(res, 400, { error: '任务已存在' });
       state.tasks.push({ id: uid(), taskId: id, type });
-      log('task', `新增任务 ${id} (${TYPES[type]})`); saveState(); broadcast();
+      log('task', `新增任务 ${id} (${TYPES[type]})`, 'admin'); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }
     if (url === '/api/reassign') {
@@ -175,7 +182,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url === '/api/reset') {
       state.accounts.forEach(a => a.used = 0); state.lastResetDate = todayStr();
-      log('reset', '手动刷新，今日计数清零'); saveState(); broadcast();
+      log('reset', '手动刷新，今日计数清零', 'admin'); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }
   }

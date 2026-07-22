@@ -100,6 +100,15 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .foot .upd{font-size:11px;color:var(--muted)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1f2933;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:99}
 .toast.show{opacity:1}
+.logs{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:16px}
+.logs-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;margin-bottom:10px}
+.logs .item{display:flex;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border);align-items:baseline}
+.logs .item:last-child{border-bottom:none}
+.logs .ts{color:var(--muted);font-size:11px;min-width:62px;font-variant-numeric:tabular-nums}
+.logs .who{font-size:11px;color:var(--muted);background:var(--bg);padding:1px 7px;border-radius:10px;white-space:nowrap}
+.logs .act{font-weight:700;min-width:56px}
+.logs .t-dispatch{color:var(--blue)} .logs .t-inc{color:var(--green)} .logs .t-dec{color:var(--purple)} .logs .t-account{color:var(--green)} .logs .t-task{color:var(--blue)} .logs .t-reset{color:var(--red)} .logs .t-system{color:var(--muted)}
+.logs .txt{color:var(--text);flex:1}
 .empty{text-align:center;color:var(--muted);padding:30px;font-size:14px}
 @media(max-width:680px){.cards{grid-template-columns:1fr}.share input{width:130px}.hint{margin-left:0;width:100%}}
 </style>
@@ -136,7 +145,12 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
       <table><thead><tr><th>账号</th><th>任务 ID</th><th>本次</th><th>分配后</th></tr></thead><tbody id="rBody"></tbody></table>
     </div>
   </div>
-  <div class="viewer-note" id="viewerNote" style="display:none">🔒 当前为只读视图：仅管理员可派单与增删账号/任务。如需操作，请用管理员密码重新登录（右上角「退出」后重输）。</div>
+  <div class="viewer-note" id="viewerNote" style="display:none">🔒 当前为只读视图：仅管理员可派单、增删账号/任务、刷新次数。如需操作，请用管理员密码重新登录（右上角「退出」后重输）。</div>
+
+  <div class="logs" id="logsBox" style="display:none">
+    <div class="logs-h"><span>📋 操作日志（仅管理员可见）</span><span class="upd" id="logUpd"></span></div>
+    <div id="logs"></div>
+  </div>
 
   <div class="tabs">
     <div class="tab on" data-t="acc">账号 <span class="c" id="cAcc">0</span></div>
@@ -220,6 +234,22 @@ function render(){
   document.getElementById('upd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
 }
 
+// 操作日志（仅管理员）
+let logTimer=null;
+function actLabel(t){return {dispatch:'派单',inc:'+1',dec:'−1',account:'新增账号',task:'新增任务',reassign:'改绑',reset:'刷新',system:'系统'}[t]||t;}
+function renderLogs(data){
+  const logs=data.logs||[];
+  document.getElementById('logs').innerHTML = logs.slice(0,40).map(l=>{
+    const t=new Date(l.ts);
+    const hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0'),ss=String(t.getSeconds()).padStart(2,'0');
+    const who = l.role==='system'?'系统':'管理员';
+    return `<div class="item"><span class="ts">${hh}:${mm}:${ss}</span><span class="who">${who}</span><span class="act logs-t-${l.type}">${actLabel(l.type)}</span><span class="txt">${l.text}</span></div>`;
+  }).join('') || '<div class="item" style="color:var(--muted)">暂无操作记录</div>';
+  document.getElementById('logUpd').textContent='更新于 '+new Date().toLocaleTimeString('zh-CN');
+}
+function startLogSync(){ if(logTimer)return; const load=()=>{fetch('/api/logs',{headers:authH()}).then(r=>r.ok?r.json():null).then(d=>{if(d)renderLogs(d);});}; load(); logTimer=setInterval(load,12000); }
+function stopLogSync(){ if(logTimer){clearInterval(logTimer);logTimer=null;} }
+
 // 按角色显隐界面
 function applyRole(){
   const admin=ROLE==='admin';
@@ -233,6 +263,7 @@ function applyRole(){
   document.getElementById('addTask').style.display=admin?'':'none';
   document.getElementById('reset').style.display=admin?'':'none';
   document.getElementById('logout').style.display=(ROLE&&PW)?'inline-block':'none';
+  if(admin){document.getElementById('logsBox').style.display='block';startLogSync();}else{document.getElementById('logsBox').style.display='none';stopLogSync();}
   render();
 }
 
@@ -261,7 +292,7 @@ fetch('/api/state').then(r=>r.json()).then(async d=>{
 
 // 退出登录
 document.getElementById('logout').onclick=()=>{
-  localStorage.removeItem('hg_pw');localStorage.removeItem('hg_role');location.reload();
+  stopLogSync();localStorage.removeItem('hg_pw');localStorage.removeItem('hg_role');location.reload();
 };
 
 // 派单（管理员）

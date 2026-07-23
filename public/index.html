@@ -148,9 +148,15 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
     <div id="logs"></div>
   </div>
 
-  <div class="tabs">
-    <div class="tab on" data-t="acc">账号 <span class="c" id="cAcc">0</span></div>
-    <div class="tab" data-t="task">任务 <span class="c" id="cTask">0</span></div>
+  <div style="display:flex;gap:10px;align-items:center;margin:6px 0 12px;flex-wrap:wrap">
+    <div class="tabs" style="margin:0">
+      <div class="tab on" data-t="acc">账号 <span class="c" id="cAcc">0</span></div>
+      <div class="tab" data-t="task">任务 <span class="c" id="cTask">0</span></div>
+    </div>
+    <div style="flex:1;min-width:180px;max-width:320px;position:relative">
+      <input id="search" type="text" placeholder="搜索账号 / 任务ID…" style="width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;background:#fff">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px">🔍</span>
+    </div>
   </div>
   <div class="list" id="list"></div>
 
@@ -223,12 +229,20 @@ function render(){
   const hintColor=TYPE_COLORS[hintType]||'#64748b';
   document.getElementById('hint').innerHTML=`${TYPES[hintType]||''} 当前剩余 <b style="color:${hintColor}">${remaining(hintType)}</b> 条`;
   // 列表
+  const kw=(document.getElementById('search')?.value||'').trim().toLowerCase();
   const tab=document.querySelector('.tab.on').dataset.t;
   document.getElementById('cAcc').textContent=S.accounts.length;
   document.getElementById('cTask').textContent=S.tasks.length;
   const admin=ROLE==='admin';
   if(tab==='acc'){
-    const list=S.accounts.slice().sort((a,b)=>((a.disabled?1:0)-(b.disabled?1:0))||(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
+    let list=S.accounts.slice().sort((a,b)=>((a.disabled?1:0)-(b.disabled?1:0))||(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
+    if(kw){
+      list=list.filter(a=>{
+        if(a.name.toLowerCase().includes(kw)) return true;
+        const tasks=S.tasks.filter(t=>t.type===a.type);
+        return tasks.some(t=>t.taskId.toLowerCase().includes(kw));
+      });
+    }
     document.getElementById('list').innerHTML=list.map(a=>{
       const tasks=S.tasks.filter(t=>t.type===a.type);
       const q=accountQuota(a);
@@ -245,15 +259,17 @@ function render(){
         <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}</span>${quotaInput}</div>
         ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full||a.disabled?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0||a.disabled?'disabled':''}>−1</button><button class="toggle" data-toggle="${a.id}" style="margin-left:auto;background:${a.disabled?'#15a34a':'#64748b'}">${a.disabled?'启用':'停用'}</button></div>`:''}
       </div>`;
-    }).join('');
+    }).join('')||'<div class="empty">未找到匹配账号</div>';
   }else{
-    document.getElementById('list').innerHTML=S.tasks.map(t=>{
+    let tasks=S.tasks;
+    if(kw){ tasks=tasks.filter(t=>t.taskId.toLowerCase().includes(kw)); }
+    document.getElementById('list').innerHTML=tasks.map(t=>{
       const accs=S.accounts.filter(a=>a.type===t.type&&!a.disabled);
       const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.reduce((s,a)=>s+accountQuota(a),0), rem=cap-used;
       const c=TYPE_COLORS[t.type]||'#64748b';
       return `<div class="tsk">${admin?`<button class="x" data-deltask="${t.id}" style="float:right;background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px">✕</button>`:''}<div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
         <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
-    }).join('')||'<div class="empty">暂无任务</div>';
+    }).join('')||`<div class="empty">${kw?'未找到匹配任务':'暂无任务'}</div>`;
   }
   // 动态渲染自动分配类型选择（每次 render 都重绘，确保新增类型即时出现）
   const dType=document.getElementById('dType');
@@ -381,6 +397,7 @@ document.getElementById('list').addEventListener('change',async e=>{
 });
 document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');render();});
+document.getElementById('search').addEventListener('input',()=>render());
 // 弹窗（管理员）
 let mMode='acc';
 function parseAccountPaste(text){

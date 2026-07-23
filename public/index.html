@@ -62,7 +62,12 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .tab.on{background:var(--text);color:#fff;border-color:var(--text)}
 .tab .c{opacity:.6;font-weight:600}
 
-.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.list{display:flex;flex-direction:column;gap:14px}
+.group{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.group-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-left:10px;border-left:4px solid var(--muted)}
+.group-title{font-size:15px;font-weight:800}
+.group-meta{font-size:12px;color:var(--muted);margin-left:auto}
+.group-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .acc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);position:relative}
 .acc.full{opacity:.55}
 .acc.disabled{opacity:.5;background:#f8fafc}
@@ -248,7 +253,9 @@ function render(){
         return tasks.some(t=>terms.some(term=>t.taskId.toLowerCase().includes(term)));
       });
     }
-    document.getElementById('list').innerHTML=list.map(a=>{
+    const groups={}; for(const t of types) groups[t]=[];
+    for(const a of list){ if(!groups[a.type]) groups[a.type]=[]; groups[a.type].push(a); }
+    const renderAcc=a=>{
       const tasks=S.tasks.filter(t=>t.type===a.type);
       const isTemp=a.quota!==undefined&&a.quota!==null;
       const total=accountTotalUsed(a), cap=accountTotalCapacity(a), lf=cap-total;
@@ -264,11 +271,23 @@ function render(){
         <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}${isTemp?' 累计':' 今日'}</span>${quotaInput}</div>
         ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full||a.disabled?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0||a.disabled?'disabled':''}>−1</button><button class="toggle" data-toggle="${a.id}" style="margin-left:auto;background:${a.disabled?'#15a34a':'#64748b'}">${a.disabled?'启用':'停用'}</button></div>`:''}
       </div>`;
+    };
+    document.getElementById('list').innerHTML=types.map(type=>{
+      const items=groups[type]||[]; if(!items.length) return '';
+      const c=TYPE_COLORS[type]||'#64748b';
+      const typeTasks=S.tasks.filter(t=>t.type===type);
+      const typeAccs=S.accounts.filter(a=>a.type===type);
+      const used=typeAccs.reduce((s,a)=>s+accountTotalUsed(a),0);
+      const cap=typeAccs.reduce((s,a)=>s+accountTotalCapacity(a),0);
+      const rem=cap-used;
+      return `<div class="group"><div class="group-head" style="border-left-color:${c}"><span class="group-title" style="color:${c}">${TYPES[type]||type}</span><span class="group-meta">${items.length} 个账号 · ${typeTasks.length} 个任务 · 剩余 ${rem}/${cap}</span></div><div class="group-body">${items.map(renderAcc).join('')}</div></div>`;
     }).join('')||'<div class="empty">未找到匹配账号</div>';
   }else{
     let tasks=S.tasks;
     if(terms.length){ tasks=tasks.filter(t=>terms.some(term=>t.taskId.toLowerCase().includes(term))); }
-    document.getElementById('list').innerHTML=tasks.map(t=>{
+    const groups={}; for(const t of types) groups[t]=[];
+    for(const t of tasks){ if(!groups[t.type]) groups[t.type]=[]; groups[t.type].push(t); }
+    const renderTask=t=>{
       const accs=S.accounts.filter(a=>a.type===t.type&&!a.disabled);
       const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0);
       const rem=accs.reduce((s,a)=>{
@@ -279,6 +298,15 @@ function render(){
       const c=TYPE_COLORS[t.type]||'#64748b';
       return `<div class="tsk">${admin?`<button class="x" data-deltask="${t.id}" style="float:right;background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px">✕</button>`:''}<div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
         <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
+    };
+    document.getElementById('list').innerHTML=types.map(type=>{
+      const items=groups[type]||[]; if(!items.length) return '';
+      const c=TYPE_COLORS[type]||'#64748b';
+      const accs=S.accounts.filter(a=>a.type===type);
+      const used=accs.reduce((s,a)=>s+accountTotalUsed(a),0);
+      const cap=accs.reduce((s,a)=>s+accountTotalCapacity(a),0);
+      const rem=cap-used;
+      return `<div class="group"><div class="group-head" style="border-left-color:${c}"><span class="group-title" style="color:${c}">${TYPES[type]||type}</span><span class="group-meta">${items.length} 个任务 · ${accs.length} 个账号 · 剩余 ${rem}/${cap}</span></div><div class="group-body">${items.map(renderTask).join('')}</div></div>`;
     }).join('')||`<div class="empty">${kw?'未找到匹配任务':'暂无任务'}</div>`;
   }
   // 动态渲染自动分配类型选择（每次 render 都重绘，确保新增类型即时出现）

@@ -136,7 +136,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
     </div>
     <div class="result" id="result">
       <div id="rPill"></div>
-      <table><thead><tr><th>账号</th><th>任务 ID</th><th>本次</th><th>分配后</th></tr></thead><tbody id="rBody"></tbody></table>
+      <table><thead><tr><th>任务 ID</th><th>账号</th><th>本次</th><th>分配后</th></tr></thead><tbody id="rBody"></tbody></table>
     </div>
   </div>
   <div class="viewer-note" id="viewerNote" style="display:none">🔒 当前为普通用户视图：可自动派单；增删账号/任务、刷新次数、查看日志仅管理员可用。如需管理操作，请用管理员密码重新登录（右上角「退出」后重输）。</div>
@@ -342,9 +342,17 @@ document.getElementById('go').onclick=async()=>{
   document.getElementById('rPill').innerHTML=
     `<span class="pill ok">${TYPES[dispType]} 已分配 ${r.assigned} 条</span>`+
     (r.shortfall>0?` <span class="pill warn">额度不足，还差 ${r.shortfall} 条</span>`:'');
-  document.getElementById('rBody').innerHTML=r.plan.map(p=>`<tr>
-    <td style="font-weight:700">${p.name}</td><td class="tid">${p.taskId}</td>
-    <td class="as">+${p.give}</td><td>${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' 满':''}</td></tr>`).join('');
+  const byTask={};
+  r.plan.forEach(p=>{(byTask[p.taskId]=byTask[p.taskId]||[]).push(p);});
+  const taskKeys=Object.keys(byTask).sort();
+  document.getElementById('rBody').innerHTML=taskKeys.map(tid=>{
+    const rows=byTask[tid];
+    return rows.map((p,i)=>`<tr>
+      ${i===0?`<td class="tid" rowspan="${rows.length}" style="vertical-align:middle;font-weight:700">${tid}</td>`:''}
+      <td style="font-weight:600">${p.name}</td>
+      <td class="as">+${p.give}</td>
+      <td>${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' 满':''}</td></tr>`).join('');
+  }).join('');
   toast('已自动分配并保存');
 };
 // 列表交互（管理员）

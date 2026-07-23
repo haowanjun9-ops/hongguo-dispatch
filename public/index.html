@@ -186,24 +186,29 @@ function authH(){return PW?{'x-passcode':PW}:{};}
 function withName(obj){const n=localStorage.getItem('hg_name');return n?Object.assign({},obj,{adminName:n}):obj;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
-function remaining(type){return S.accounts.filter(a=>a.type===type).reduce((s,a)=>s+(QUOTA-a.used),0);}
+function remaining(type){const tasks=S.tasks.filter(t=>t.type===type),accs=S.accounts.filter(a=>a.type===type);return accs.reduce((sum,a)=>sum+tasks.reduce((s,t)=>s+(QUOTA-(a.used[t.id]||0)),0),0);}
+function accountTotalUsed(a){return Object.values(a.used||{}).reduce((s,n)=>s+n,0);}
+function accountCapacity(a){return Math.max(1,S.tasks.filter(t=>t.type===a.type).length)*QUOTA;}
 
 function render(){
   if(!S)return;
   refreshTypes();
-  // 类型卡片
+  // 类型卡片（容量 = 账号数 × 任务数 × 6）
   const types=Object.keys(TYPES);
   document.getElementById('cards').innerHTML=types.map(type=>{
     const c=TYPE_COLORS[type]||'#64748b';
     const accs=S.accounts.filter(a=>a.type===type);
-    const cap=accs.length*QUOTA, used=accs.reduce((s,a)=>s+a.used,0), rem=cap-used;
-    const avail=accs.filter(a=>a.used<QUOTA).length;
+    const tasks=S.tasks.filter(t=>t.type===type);
+    const cap=accs.length*tasks.length*QUOTA;
+    const used=accs.reduce((s,a)=>s+accountTotalUsed(a),0);
+    const rem=cap-used;
+    const avail=accs.filter(a=>accountTotalUsed(a)<accountCapacity(a)).length;
     const pct=cap?Math.round(used/cap*100):0;
     return `<div class="card"><span class="bar" style="background:${c}"></span>
       <div class="t">${TYPES[type]}</div>
       <div class="n" style="color:${c}">${rem}<small> 条剩余</small></div>
       <div class="s">可用 ${avail} 号 · 已传 ${used}/${cap}</div>
-      <div class="s">总容量 ${cap}（${Math.round(pct)}% 已用）</div></div>`;
+      <div class="s">${accs.length} 账号 × ${tasks.length} 任务 × ${QUOTA} = ${cap}（${Math.round(pct)}% 已用）</div></div>`;
   }).join('')||'<div class="empty">暂无类型</div>';
   // 提示
   const hintType=dispType||types[0]||'';
@@ -215,26 +220,29 @@ function render(){
   document.getElementById('cTask').textContent=S.tasks.length;
   const admin=ROLE==='admin';
   if(tab==='acc'){
-    const list=S.accounts.slice().sort((a,b)=>(a.used-b.used)||a.name.localeCompare(b.name,'zh'));
+    const list=S.accounts.slice().sort((a,b)=>(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
     document.getElementById('list').innerHTML=list.map(a=>{
-      const full=a.used>=QUOTA, lf=QUOTA-a.used, pct=Math.min(100,Math.round(a.used/QUOTA*100));
+      const tasks=S.tasks.filter(t=>t.type===a.type);
+      const total=accountTotalUsed(a), cap=accountCapacity(a), lf=cap-total;
+      const full=lf<=0, pct=Math.min(100,Math.round(total/cap*100));
       const c=TYPE_COLORS[a.type]||'#64748b';
+      const taskLines=tasks.map(t=>`任务 ${t.taskId}: ${a.used[t.id]||0}/${QUOTA}`).join(' · ');
       return `<div class="acc ${full?'full':''}">
         ${admin?`<button class="x" data-del="${a.id}">✕</button>`:''}
         <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span></div>
-        <div class="tk">任务 ${taskIdOf(a.taskId)}</div>
+        <div class="tk">${taskLines}</div>
         <div class="bar ${full?'full':''}"><i style="width:${pct}%;background:${c}"></i></div>
-        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${a.used}/${QUOTA}</span></div>
-        ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${a.used<=0?'disabled':''}>−1</button></div>`:''}
+        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}</span></div>
+        ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0?'disabled':''}>−1</button></div>`:''}
       </div>`;
     }).join('');
   }else{
     document.getElementById('list').innerHTML=S.tasks.map(t=>{
-      const accs=S.accounts.filter(a=>a.taskId===t.id);
-      const used=accs.reduce((s,a)=>s+a.used,0), cap=accs.length*QUOTA, rem=cap-used;
+      const accs=S.accounts.filter(a=>a.type===t.type);
+      const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.length*QUOTA, rem=cap-used;
       const c=TYPE_COLORS[t.type]||'#64748b';
       return `<div class="tsk"><div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
-        <div class="m">绑定 ${accs.length} 号 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
+        <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
     }).join('')||'<div class="empty">暂无任务</div>';
   }
   // 动态渲染自动分配类型选择
@@ -332,7 +340,7 @@ document.getElementById('go').onclick=async()=>{
   if(!r.plan){toast(r.error||'无权限');return;}
   document.getElementById('result').classList.add('show');
   document.getElementById('rPill').innerHTML=
-    `<span class="pill ok">${TYPES[dispType]} 已分配 ${r.assigned} 条 / ${r.plan.length} 个账号</span>`+
+    `<span class="pill ok">${TYPES[dispType]} 已分配 ${r.assigned} 条</span>`+
     (r.shortfall>0?` <span class="pill warn">额度不足，还差 ${r.shortfall} 条</span>`:'');
   document.getElementById('rBody').innerHTML=r.plan.map(p=>`<tr>
     <td style="font-weight:700">${p.name}</td><td class="tid">${p.taskId}</td>

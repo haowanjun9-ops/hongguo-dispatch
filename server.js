@@ -40,15 +40,26 @@ function seedState() {
     SEED[t].tasks.forEach(id => s.tasks.push({ id: uid(), taskId: id, type: t }));
     SEED[t].accounts.forEach((name, i) => {
       const task = s.tasks.filter(x => x.type === t)[i % SEED[t].tasks.length];
-      s.accounts.push({ id: uid(), name, type: t, taskId: task.id, used: 0, createdAt: Date.now() });
+      s.accounts.push({ id: uid(), name, type: t, taskId: task.id, used: {}, createdAt: Date.now() });
     });
   }
   return s;
+}
+function migrateAccountUsed() {
+  for (const a of state.accounts) {
+    if (typeof a.used === 'number') {
+      const old = a.used;
+      a.used = {};
+      if (a.taskId && state.tasks.some(t => t.id === a.taskId)) a.used[a.taskId] = old;
+    }
+    if (!a.used || typeof a.used !== 'object') a.used = {};
+  }
 }
 function loadState() {
   try { state = JSON.parse(fs.readFileSync(STORE, 'utf8')); }
   catch (e) { state = seedState(); }
   if (!state.types || !state.types.length) state.types = DEFAULT_TYPES.map(t => ({ ...t }));
+  migrateAccountUsed();
   ensureFresh();
   saveState();
 }
@@ -71,27 +82,44 @@ function roleOfPass(p) {
 }
 function roleOfHeader(req) { return roleOfPass(req.headers['x-passcode'] || ''); }
 function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks, types: state.types }; }
-function typeRemaining(type) { return state.accounts.filter(a => a.type === type).reduce((s, a) => s + (QUOTA - a.used), 0); }
+function typeRemaining(type) {
+  const tasks = state.tasks.filter(t => t.type === type);
+  const accs = state.accounts.filter(a => a.type === type);
+  return accs.reduce((sum, a) => sum + tasks.reduce((s, t) => s + (QUOTA - (a.used[t.id] || 0)), 0), 0);
+}
 function validType(type) { return state.types.some(x => x.id === type); }
 function typeName(type) { const t = state.types.find(x => x.id === type); return t ? t.name : type; }
 function typeColor(type) { const t = state.types.find(x => x.id === type); return t ? t.color : '#64748b'; }
+function accountUsed(a, taskId) { return (a.used && a.used[taskId]) || 0; }
+function accountTotalUsed(a) { return Object.values(a.used || {}).reduce((s, n) => s + n, 0); }
+function accountCapacity(a) { return Math.max(1, state.tasks.filter(t => t.type === a.type).length) * QUOTA; }
+function typeTasks(type) { return state.tasks.filter(t => t.type === type); }
 
-// 服务端原子分配：谁先请求谁先占，避免重复
+// 服务端原子分配：每个账号对每个任务都有 QUOTA 条额度；谁先请求谁先占，避免重复
 function allocate(type, need, who) {
-  const accs = state.accounts.filter(a => a.type === type && a.used < QUOTA)
-    .map(a => ({ a, left: QUOTA - a.used }))
-    .sort((x, y) => y.left - x.left);
+  const tasks = typeTasks(type);
+  const accs = state.accounts.filter(a => a.type === type);
+  let pairs = [];
+  for (const a of accs) {
+    for (const t of tasks) {
+      const left = QUOTA - (a.used[t.id] || 0);
+      if (left > 0) pairs.push({ a, t, left });
+    }
+  }
+  // 优先使用剩余额度最大的组合，让分配更均匀
+  pairs.sort((x, y) => y.left - x.left || x.a.name.localeCompare(y.a.name, 'zh'));
   let remaining = need;
   const plan = [];
-  for (const it of accs) {
+  for (const p of pairs) {
     if (remaining <= 0) break;
-    const give = Math.min(it.left, remaining);
-    plan.push({ accId: it.a.id, name: it.a.name, taskId: taskIdOf(it.a.taskId), before: it.a.used, give });
-    it.a.used += give;
+    const give = Math.min(p.left, remaining);
+    const before = p.a.used[p.t.id] || 0;
+    p.a.used[p.t.id] = before + give;
+    plan.push({ accId: p.a.id, name: p.a.name, taskId: p.t.taskId, taskDbId: p.t.id, before, give });
     remaining -= give;
   }
   const assigned = need - remaining;
-  if (assigned > 0) { log('dispatch', `派单 ${typeName(type)} ${assigned} 条（${plan.length} 个账号）`, who); saveState(); broadcast(); }
+  if (assigned > 0) { log('dispatch', `派单 ${typeName(type)} ${assigned} 条（${plan.length} 个组合）`, who); saveState(); broadcast(); }
   return { plan, assigned, shortfall: remaining };
 }
 
@@ -179,12 +207,37 @@ const server = http.createServer(async (req, res) => {
     }
     if (url === '/api/inc') {
       const a = state.accounts.find(x => x.id === body.id);
-      if (a && a.used < QUOTA) { a.used++; log('inc', `「${a.name}」+1（${a.used}/${QUOTA}）`, who); saveState(); broadcast(); }
+      if (a) {
+        const tasks = typeTasks(a.type);
+        const cand = tasks
+          .map(t => ({ t, used: a.used[t.id] || 0 }))
+          .filter(x => x.used < QUOTA)
+          .sort((x, y) => x.used - y.used || (x.t.id === a.taskId ? -1 : 0));
+        if (cand.length) {
+          const t = cand[0].t;
+          a.used[t.id] = (a.used[t.id] || 0) + 1;
+          log('inc', `「${a.name}」任务 ${t.taskId} +1（${a.used[t.id]}/${QUOTA}）`, who);
+          saveState(); broadcast();
+        }
+      }
       return send(res, 200, { ok: true });
     }
     if (url === '/api/dec') {
       const a = state.accounts.find(x => x.id === body.id);
-      if (a && a.used > 0) { a.used--; log('dec', `「${a.name}」−1（${a.used}/${QUOTA}）`, who); saveState(); broadcast(); }
+      if (a) {
+        const tasks = typeTasks(a.type);
+        const cand = tasks
+          .map(t => ({ t, used: a.used[t.id] || 0 }))
+          .filter(x => x.used > 0)
+          .sort((x, y) => y.used - x.used || (x.t.id === a.taskId ? -1 : 0));
+        if (cand.length) {
+          const t = cand[0].t;
+          a.used[t.id] = (a.used[t.id] || 0) - 1;
+          if (!a.used[t.id]) delete a.used[t.id];
+          log('dec', `「${a.name}」任务 ${t.taskId} −1（${a.used[t.id] || 0}/${QUOTA}）`, who);
+          saveState(); broadcast();
+        }
+      }
       return send(res, 200, { ok: true });
     }
     if (url === '/api/account') {
@@ -225,7 +278,8 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     if (url === '/api/reset') {
-      state.accounts.forEach(a => a.used = 0); state.lastResetDate = todayStr();
+      state.accounts.forEach(a => a.used = {});
+      state.lastResetDate = todayStr();
       log('reset', '手动刷新，今日计数清零', who); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }

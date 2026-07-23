@@ -154,7 +154,7 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
       <div class="tab" data-t="task">任务 <span class="c" id="cTask">0</span></div>
     </div>
     <div style="flex:1;min-width:180px;max-width:320px;position:relative">
-      <input id="search" type="text" placeholder="搜索账号 / 任务ID…" style="width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;background:#fff">
+      <input id="search" type="text" placeholder="搜索多个账号 / 任务ID（空格分隔）" style="width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;background:#fff">
       <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px">🔍</span>
     </div>
   </div>
@@ -230,17 +230,19 @@ function render(){
   document.getElementById('hint').innerHTML=`${TYPES[hintType]||''} 当前剩余 <b style="color:${hintColor}">${remaining(hintType)}</b> 条`;
   // 列表
   const kw=(document.getElementById('search')?.value||'').trim().toLowerCase();
+  const terms=kw.split(/\s+/).filter(Boolean);
   const tab=document.querySelector('.tab.on').dataset.t;
   document.getElementById('cAcc').textContent=S.accounts.length;
   document.getElementById('cTask').textContent=S.tasks.length;
   const admin=ROLE==='admin';
   if(tab==='acc'){
     let list=S.accounts.slice().sort((a,b)=>((a.disabled?1:0)-(b.disabled?1:0))||(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
-    if(kw){
+    if(terms.length){
       list=list.filter(a=>{
-        if(a.name.toLowerCase().includes(kw)) return true;
+        const name=a.name.toLowerCase();
+        if(terms.some(t=>name.includes(t))) return true;
         const tasks=S.tasks.filter(t=>t.type===a.type);
-        return tasks.some(t=>t.taskId.toLowerCase().includes(kw));
+        return tasks.some(t=>terms.some(term=>t.taskId.toLowerCase().includes(term)));
       });
     }
     document.getElementById('list').innerHTML=list.map(a=>{
@@ -262,7 +264,7 @@ function render(){
     }).join('')||'<div class="empty">未找到匹配账号</div>';
   }else{
     let tasks=S.tasks;
-    if(kw){ tasks=tasks.filter(t=>t.taskId.toLowerCase().includes(kw)); }
+    if(terms.length){ tasks=tasks.filter(t=>terms.some(term=>t.taskId.toLowerCase().includes(term))); }
     document.getElementById('list').innerHTML=tasks.map(t=>{
       const accs=S.accounts.filter(a=>a.type===t.type&&!a.disabled);
       const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.reduce((s,a)=>s+accountQuota(a),0), rem=cap-used;

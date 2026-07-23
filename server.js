@@ -246,16 +246,24 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     if (url === '/api/account') {
-      const names = Array.isArray(body.names) ? body.names : [body.name];
       const type = body.type;
-      const taskId = body.taskId;
-      if (!validType(type) || !taskId) return send(res, 400, { error: '参数错误' });
-      const quota = body.quota === undefined || body.quota === '' ? null : parseInt(body.quota, 10);
+      const taskId = body.taskId || state.tasks.find(t => t.type === type)?.id || '';
+      if (!validType(type)) return send(res, 400, { error: '参数错误' });
+      // 支持两种格式：1) names + 统一 quota（旧） 2) accounts: [{name,quota?}]
+      let items = [];
+      if (Array.isArray(body.accounts)) {
+        items = body.accounts.map(a => ({ name: (a.name || '').trim(), quota: a.quota }));
+      } else {
+        const names = Array.isArray(body.names) ? body.names : [body.name];
+        const quota = body.quota === undefined || body.quota === '' ? null : parseInt(body.quota, 10);
+        items = names.map(name => ({ name: (name || '').trim(), quota }));
+      }
       let added = 0;
-      for (const n of names) {
-        const name = (n || '').trim();
+      for (const item of items) {
+        const name = item.name;
         if (!name) continue;
-        state.accounts.push({ id: uid(), name, type, taskId, used: 0, disabled: false, quota, createdAt: Date.now() });
+        const quota = item.quota === undefined || item.quota === '' || item.quota === null ? null : Math.max(1, parseInt(item.quota, 10) || 1);
+        state.accounts.push({ id: uid(), name, type, taskId, used: {}, disabled: false, quota, createdAt: Date.now() });
         const qText = quota ? `（限${quota}条/任务）` : '';
         log('account', `新增账号「${name}」(${typeName(type)})${qText}`, who);
         added++;

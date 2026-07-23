@@ -245,17 +245,13 @@ function render(){
         <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
     }).join('')||'<div class="empty">暂无任务</div>';
   }
-  // 动态渲染自动分配类型选择
+  // 动态渲染自动分配类型选择（每次 render 都重绘，确保新增类型即时出现）
   const dType=document.getElementById('dType');
-  if(dType && dType.dataset.rendered!=='yes'){
-    dType.innerHTML=types.map(type=>`<div class="o${type===dispType?' on':''}" data-t="${type}" style="${type===dispType?`background:${TYPE_COLORS[type]};color:#fff;border-color:${TYPE_COLORS[type]}`:''}">${TYPES[type]}</div>`).join('');
-    dType.dataset.rendered='yes';
-  }else if(dType){
-    Array.from(dType.children).forEach(el=>{
-      const on=el.dataset.t===dispType, c=TYPE_COLORS[el.dataset.t]||'#64748b';
-      el.classList.toggle('on',on);
-      el.style.cssText=on?`background:${c};color:#fff;border-color:${c}`:'';
-    });
+  if(dType){
+    dType.innerHTML=types.map(type=>{
+      const on=type===dispType, c=TYPE_COLORS[type]||'#64748b';
+      return `<div class="o${on?' on':''}" data-t="${type}" style="${on?`background:${c};color:#fff;border-color:${c}`:''}">${TYPES[type]}</div>`;
+    }).join('');
   }
   // 动态渲染新增弹窗类型下拉
   const mType=document.getElementById('mType');

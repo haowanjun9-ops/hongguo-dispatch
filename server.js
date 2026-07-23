@@ -68,9 +68,10 @@ function loadState() {
 function saveState() { try { fs.writeFileSync(STORE, JSON.stringify(state, null, 2)); } catch (e) {} }
 function ensureFresh() {
   if (state.lastResetDate !== todayStr()) {
-    state.accounts.forEach(a => a.used = 0);
+    // 只有普通账号（quota 为 null）每日刷新；临时账号（quota 有值）累计不刷新
+    state.accounts.forEach(a => { if (a.quota === null || a.quota === undefined) a.used = {}; });
     state.lastResetDate = todayStr();
-    log('reset', '跨天自动刷新，今日计数清零');
+    log('reset', '跨天自动刷新，普通账号计数清零');
   }
 }
 function taskIdOf(id) { const t = state.tasks.find(x => x.id === id); return t ? t.taskId : '—'; }
@@ -85,9 +86,8 @@ function roleOfPass(p) {
 function roleOfHeader(req) { return roleOfPass(req.headers['x-passcode'] || ''); }
 function publicState() { return { needPasscode: !!PASSCODE, lastResetDate: state.lastResetDate, accounts: state.accounts, tasks: state.tasks, types: state.types }; }
 function typeRemaining(type) {
-  const tasks = state.tasks.filter(t => t.type === type);
-  const accs = state.accounts.filter(a => a.type === type);
-  return accs.reduce((sum, a) => sum + tasks.reduce((s, t) => s + (QUOTA - (a.used[t.id] || 0)), 0), 0);
+  const accs = state.accounts.filter(a => a.type === type && !a.disabled);
+  return accs.reduce((sum, a) => sum + (accountTotalCapacity(a) - accountTotalUsed(a)), 0);
 }
 function validType(type) { return state.types.some(x => x.id === type); }
 function typeName(type) { const t = state.types.find(x => x.id === type); return t ? t.name : type; }
@@ -95,31 +95,45 @@ function typeColor(type) { const t = state.types.find(x => x.id === type); retur
 function accountUsed(a, taskId) { return (a.used && a.used[taskId]) || 0; }
 function accountTotalUsed(a) { return Object.values(a.used || {}).reduce((s, n) => s + n, 0); }
 function accountQuota(a) { return (a.quota === undefined || a.quota === null) ? QUOTA : Math.max(1, parseInt(a.quota, 10) || 1); }
-function accountCapacity(a) { return Math.max(1, state.tasks.filter(t => t.type === a.type).length) * accountQuota(a); }
+// 账号总容量：普通账号 = 任务数 × 每任务6条；临时账号 = quota 总上限
+function accountTotalCapacity(a) {
+  if (a.quota !== undefined && a.quota !== null) return Math.max(1, parseInt(a.quota, 10) || 1);
+  return Math.max(0, state.tasks.filter(t => t.type === a.type).length) * QUOTA;
+}
 function typeTasks(type) { return state.tasks.filter(t => t.type === type); }
 
-// 服务端原子分配：每个账号对每个任务都有 QUOTA 条额度；谁先请求谁先占，避免重复
+// 服务端原子分配：普通账号按每任务额度每日刷新；临时账号按账号总上限累计不刷新
 function allocate(type, need, who) {
   const tasks = typeTasks(type);
   const accs = state.accounts.filter(a => a.type === type && !a.disabled);
   let pairs = [];
   for (const a of accs) {
-    const q = accountQuota(a);
+    const total = accountTotalUsed(a);
+    const cap = accountTotalCapacity(a);
+    const isTemp = a.quota !== undefined && a.quota !== null;
+    const acctLeft = cap - total; // 临时账号的账号总剩余
     for (const t of tasks) {
-      const left = q - (a.used[t.id] || 0);
-      if (left > 0) pairs.push({ a, t, left });
+      // 每任务最多 6 条（分散），临时账号再受账号总剩余约束
+      let left = QUOTA - (a.used[t.id] || 0);
+      if (isTemp) left = Math.min(left, acctLeft);
+      if (left > 0) pairs.push({ a, t, left, taskUsed: a.used[t.id] || 0, isTemp });
     }
   }
-  // 优先使用剩余额度最大的组合，让分配更均匀
-  pairs.sort((x, y) => y.left - x.left || x.a.name.localeCompare(y.a.name, 'zh'));
+  // 优先剩余额度大 -> 任务已用少（分散） -> 账号名
+  pairs.sort((x, y) => y.left - x.left || x.taskUsed - y.taskUsed || x.a.name.localeCompare(y.a.name, 'zh'));
   let remaining = need;
   const plan = [];
   for (const p of pairs) {
     if (remaining <= 0) break;
-    const give = Math.min(p.left, remaining);
+    const total = accountTotalUsed(p.a);
+    const cap = accountTotalCapacity(p.a);
+    let left = QUOTA - (p.a.used[p.t.id] || 0);
+    if (p.isTemp) left = Math.min(left, cap - total);
+    if (left <= 0) continue;
+    const give = Math.min(left, remaining);
     const before = p.a.used[p.t.id] || 0;
     p.a.used[p.t.id] = before + give;
-    plan.push({ accId: p.a.id, name: p.a.name, taskId: p.t.taskId, taskDbId: p.t.id, before, give });
+    plan.push({ accId: p.a.id, name: p.a.name, taskId: p.t.taskId, taskDbId: p.t.id, before, give, totalAfter: accountTotalUsed(p.a), cap });
     remaining -= give;
   }
   const assigned = need - remaining;
@@ -213,16 +227,20 @@ const server = http.createServer(async (req, res) => {
       const a = state.accounts.find(x => x.id === body.id);
       if (a && !a.disabled) {
         const tasks = typeTasks(a.type);
-        const q = accountQuota(a);
-        const cand = tasks
-          .map(t => ({ t, used: a.used[t.id] || 0 }))
-          .filter(x => x.used < q)
-          .sort((x, y) => x.used - y.used || (x.t.id === a.taskId ? -1 : 0));
-        if (cand.length) {
-          const t = cand[0].t;
-          a.used[t.id] = (a.used[t.id] || 0) + 1;
-          log('inc', `「${a.name}」任务 ${t.taskId} +1（${a.used[t.id]}/${q}）`, who);
-          saveState(); broadcast();
+        const total = accountTotalUsed(a);
+        const cap = accountTotalCapacity(a);
+        if (total < cap) {
+          const isTemp = a.quota !== undefined && a.quota !== null;
+          const cand = tasks
+            .map(t => ({ t, used: a.used[t.id] || 0 }))
+            .filter(x => isTemp || x.used < QUOTA)
+            .sort((x, y) => x.used - y.used || (x.t.id === a.taskId ? -1 : 0));
+          if (cand.length) {
+            const t = cand[0].t;
+            a.used[t.id] = (a.used[t.id] || 0) + 1;
+            log('inc', `「${a.name}」任务 ${t.taskId} +1（${accountTotalUsed(a)}/${cap}）`, who);
+            saveState(); broadcast();
+          }
         }
       }
       return send(res, 200, { ok: true });
@@ -239,7 +257,7 @@ const server = http.createServer(async (req, res) => {
           const t = cand[0].t;
           a.used[t.id] = (a.used[t.id] || 0) - 1;
           if (!a.used[t.id]) delete a.used[t.id];
-          log('dec', `「${a.name}」任务 ${t.taskId} −1（${a.used[t.id] || 0}/${accountQuota(a)}）`, who);
+          log('dec', `「${a.name}」任务 ${t.taskId} −1（${accountTotalUsed(a)}/${accountTotalCapacity(a)}）`, who);
           saveState(); broadcast();
         }
       }
@@ -264,7 +282,7 @@ const server = http.createServer(async (req, res) => {
         if (!name) continue;
         const quota = item.quota === undefined || item.quota === '' || item.quota === null ? null : Math.max(1, parseInt(item.quota, 10) || 1);
         state.accounts.push({ id: uid(), name, type, taskId, used: {}, disabled: false, quota, createdAt: Date.now() });
-        const qText = quota ? `（限${quota}条/任务）` : '';
+        const qText = quota ? `（账号总上限 ${quota} 条）` : '';
         log('account', `新增账号「${name}」(${typeName(type)})${qText}`, who);
         added++;
       }
@@ -293,9 +311,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     if (url === '/api/reset') {
-      state.accounts.forEach(a => a.used = {});
+      state.accounts.forEach(a => { if (a.quota === null || a.quota === undefined) a.used = {}; });
       state.lastResetDate = todayStr();
-      log('reset', '手动刷新，今日计数清零', who); saveState(); broadcast();
+      log('reset', '手动刷新，普通账号计数清零', who); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }
     if (url === '/api/account/toggle') {
@@ -308,7 +326,7 @@ const server = http.createServer(async (req, res) => {
       if (a) {
         const q = body.quota === undefined || body.quota === '' || body.quota === null ? null : Math.max(1, parseInt(body.quota, 10));
         a.quota = q;
-        log('account', `「${a.name}」配额设为 ${q === null ? '默认' : q + '条/任务'}`, who);
+        log('account', `「${a.name}」配额设为 ${q === null ? '默认（每任务每日6条）' : '账号总上限 ' + q + ' 条'}`, who);
         saveState(); broadcast();
       }
       return send(res, 200, { ok: true, quota: a ? a.quota : null });

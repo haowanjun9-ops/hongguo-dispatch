@@ -175,13 +175,13 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 <div class="modal-mask" id="m" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:14px;padding:20px;width:330px;max-width:92vw">
     <h3 id="mTitle" style="font-size:16px;margin-bottom:14px">新增</h3>
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--muted)">账号名称 / 名称+配额（每行一个，可批量）</label><textarea id="mVal" rows="5" placeholder="例如：&#10;耳朵养小说	13&#10;枕边故事局	22&#10;快乐追剧菌" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none;resize:vertical;font-family:inherit"></textarea><div id="mPreview" style="display:none;margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:12px;max-height:120px;overflow:auto"></div></div>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;color:var(--muted)">账号名称 / 名称+总上限（每行一个，可批量）</label><textarea id="mVal" rows="5" placeholder="例如：&#10;耳朵养小说	13&#10;枕边故事局	22&#10;快乐追剧菌" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none;resize:vertical;font-family:inherit"></textarea><div id="mPreview" style="display:none;margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:8px;font-size:12px;max-height:120px;overflow:auto"></div></div>
     <div style="margin-bottom:14px"><label style="font-size:12px;font-weight:700;color:var(--muted)">类型</label>
       <select id="mType" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none">
         <option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option>
       </select></div>
-    <div id="mQuotaWrap" style="margin-bottom:14px;display:none"><label style="font-size:12px;font-weight:700;color:var(--muted)">每任务上限（留空=默认6条）</label>
-      <input id="mQuota" type="number" min="1" placeholder="6" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none"></div>
+    <div id="mQuotaWrap" style="margin-bottom:14px;display:none"><label style="font-size:12px;font-weight:700;color:var(--muted)">默认总上限（留空=普通账号，每任务每日6条）</label>
+      <input id="mQuota" type="number" min="1" placeholder="临时账号总上限" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none"></div>
     <div style="display:flex;gap:10px"><button id="mCancel" style="flex:1;padding:9px;border:1px solid var(--border);background:#fff;border-radius:9px;font-weight:700;cursor:pointer">取消</button><button id="mOk" style="flex:1;padding:9px;border:none;background:var(--blue);color:#fff;border-radius:9px;font-weight:700;cursor:pointer">保存</button></div>
   </div>
 </div>
@@ -198,31 +198,34 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
 function accountQuota(a){return (a.quota===undefined||a.quota===null)?QUOTA:Math.max(1,parseInt(a.quota,10)||1);}
 function accountTotalUsed(a){return Object.values(a.used||{}).reduce((s,n)=>s+n,0);}
-function accountCapacity(a){return Math.max(1,S.tasks.filter(t=>t.type===a.type).length)*accountQuota(a);}
-function remaining(type){const tasks=S.tasks.filter(t=>t.type===type),accs=S.accounts.filter(a=>a.type===type&&!a.disabled);return accs.reduce((sum,a)=>{const q=accountQuota(a);return sum+tasks.reduce((s,t)=>s+(q-(a.used[t.id]||0)),0);},0);}
+// 账号总容量：普通账号=任务数×6；临时账号=quota 总上限
+function accountTotalCapacity(a){
+  if(a.quota!==undefined&&a.quota!==null) return Math.max(1,parseInt(a.quota,10)||1);
+  return Math.max(0,S.tasks.filter(t=>t.type===a.type).length)*QUOTA;
+}
+function remaining(type){const accs=S.accounts.filter(a=>a.type===type&&!a.disabled);return accs.reduce((sum,a)=>sum+(accountTotalCapacity(a)-accountTotalUsed(a)),0);}
 
 function render(){
   if(!S)return;
   refreshTypes();
-  // 类型卡片（容量 = 账号数 × 任务数 × 6）
+  // 类型卡片
   const types=Object.keys(TYPES);
   document.getElementById('cards').innerHTML=types.map(type=>{
     const c=TYPE_COLORS[type]||'#64748b';
     const accs=S.accounts.filter(a=>a.type===type&&!a.disabled);
     const tasks=S.tasks.filter(t=>t.type===type);
-    const hasCustom=accs.some(a=>accountQuota(a)!==QUOTA);
-    const cap=accs.reduce((s,a)=>s+tasks.length*accountQuota(a),0);
+    const hasTemp=accs.some(a=>a.quota!==undefined&&a.quota!==null);
+    const cap=accs.reduce((s,a)=>s+accountTotalCapacity(a),0);
     const used=accs.reduce((s,a)=>s+accountTotalUsed(a),0);
     const rem=cap-used;
-    const avail=accs.filter(a=>accountTotalUsed(a)<accountCapacity(a)).length;
+    const avail=accs.filter(a=>accountTotalUsed(a)<accountTotalCapacity(a)).length;
     const disabledCount=S.accounts.filter(a=>a.type===type&&a.disabled).length;
     const pct=cap?Math.round(used/cap*100):0;
-    const quotaText=hasCustom?'（含自定义配额）':`× ${QUOTA}`;
     return `<div class="card"><span class="bar" style="background:${c}"></span>
       <div class="t">${TYPES[type]}</div>
       <div class="n" style="color:${c}">${rem}<small> 条剩余</small></div>
       <div class="s">可用 ${avail} 号 · 已传 ${used}/${cap}</div>
-      <div class="s">${accs.length} 账号 × ${tasks.length} 任务 ${quotaText} = ${cap}（${Math.round(pct)}% 已用）${disabledCount?' · '+disabledCount+'个已停用':''}</div></div>`;
+      <div class="s">${accs.length} 账号 × ${tasks.length} 任务 = ${cap}（${Math.round(pct)}% 已用）${hasTemp?' · 含临时账号':''}${disabledCount?' · '+disabledCount+'个已停用':''}</div></div>`;
   }).join('')||'<div class="empty">暂无类型</div>';
   // 提示
   const hintType=dispType||types[0]||'';
@@ -247,18 +250,18 @@ function render(){
     }
     document.getElementById('list').innerHTML=list.map(a=>{
       const tasks=S.tasks.filter(t=>t.type===a.type);
-      const q=accountQuota(a);
-      const total=accountTotalUsed(a), cap=accountCapacity(a), lf=cap-total;
-      const full=lf<=0, pct=Math.min(100,Math.round(total/cap*100));
+      const isTemp=a.quota!==undefined&&a.quota!==null;
+      const total=accountTotalUsed(a), cap=accountTotalCapacity(a), lf=cap-total;
+      const full=lf<=0, pct=cap?Math.min(100,Math.round(total/cap*100)):0;
       const c=TYPE_COLORS[a.type]||'#64748b';
-      const taskLines=tasks.map(t=>`任务 ${t.taskId}: ${a.used[t.id]||0}/${q}`).join(' · ');
-      const quotaInput=admin?`<label style="font-size:11px;color:var(--muted);margin-left:auto">限<input class="quota" data-quota="${a.id}" type="number" min="1" value="${q===QUOTA?'':q}" placeholder="${QUOTA}" style="width:38px;text-align:center;margin:0 4px;padding:2px 4px;border:1px solid var(--border);border-radius:5px">条/任务</label>`:'';
+      const taskLines=tasks.map(t=>`任务 ${t.taskId}: ${a.used[t.id]||0}`).join(' · ');
+      const quotaInput=admin?`<label style="font-size:11px;color:var(--muted);margin-left:auto">总上限<input class="quota" data-quota="${a.id}" type="number" min="1" value="${isTemp?a.quota:''}" placeholder="默认" style="width:38px;text-align:center;margin:0 4px;padding:2px 4px;border:1px solid var(--border);border-radius:5px">条</label>`:'';
       return `<div class="acc ${full?'full':''} ${a.disabled?'disabled':''}">
         ${admin?`<button class="x" data-del="${a.id}">✕</button>`:''}
-        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span>${a.disabled?'<span class="tag" style="background:#fee2e2;color:#dc2626">已停用</span>':''}</div>
+        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span>${isTemp?'<span class="tag" style="background:#fef3c7;color:#d97706">临时</span>':''}${a.disabled?'<span class="tag" style="background:#fee2e2;color:#dc2626">已停用</span>':''}</div>
         <div class="tk">${taskLines}</div>
         <div class="bar ${full?'full':''}"><i style="width:${pct}%;background:${c}"></i></div>
-        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}</span>${quotaInput}</div>
+        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}${isTemp?' 累计':' 今日'}</span>${quotaInput}</div>
         ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full||a.disabled?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0||a.disabled?'disabled':''}>−1</button><button class="toggle" data-toggle="${a.id}" style="margin-left:auto;background:${a.disabled?'#15a34a':'#64748b'}">${a.disabled?'启用':'停用'}</button></div>`:''}
       </div>`;
     }).join('')||'<div class="empty">未找到匹配账号</div>';
@@ -267,7 +270,12 @@ function render(){
     if(terms.length){ tasks=tasks.filter(t=>terms.some(term=>t.taskId.toLowerCase().includes(term))); }
     document.getElementById('list').innerHTML=tasks.map(t=>{
       const accs=S.accounts.filter(a=>a.type===t.type&&!a.disabled);
-      const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.reduce((s,a)=>s+accountQuota(a),0), rem=cap-used;
+      const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0);
+      const rem=accs.reduce((s,a)=>{
+        if(a.quota!==undefined&&a.quota!==null) return s+(accountTotalCapacity(a)-accountTotalUsed(a));
+        return s+(QUOTA-(a.used[t.id]||0));
+      },0);
+      const cap=used+rem;
       const c=TYPE_COLORS[t.type]||'#64748b';
       return `<div class="tsk">${admin?`<button class="x" data-deltask="${t.id}" style="float:right;background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px">✕</button>`:''}<div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
         <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
@@ -375,7 +383,7 @@ document.getElementById('go').onclick=async()=>{
       ${i===0?`<td class="tid" rowspan="${rows.length}" style="vertical-align:middle;font-weight:700">${tid}</td>`:''}
       <td style="font-weight:600">${p.name}</td>
       <td class="as">+${p.give}</td>
-      <td>${p.before+p.give}/${QUOTA}${p.before+p.give>=QUOTA?' 满':''}</td></tr>`).join('');
+      <td>${p.totalAfter}/${p.cap}${p.totalAfter>=p.cap?' 满':''}</td></tr>`).join('');
   }).join('');
   toast('已自动分配并保存');
 };
@@ -421,7 +429,7 @@ function updateMPreview(){
   const parsed=parseAccountPaste(document.getElementById('mVal').value);
   if(!parsed.length){box.style.display='none';box.innerHTML='';return;}
   box.style.display='block';
-  box.innerHTML='<div style="font-weight:700;color:var(--muted);margin-bottom:4px">识别预览：</div>'+parsed.map((p,i)=>`<div style="padding:2px 0">${i+1}. ${p.name}${p.quota!==null?` <span style="color:var(--blue);font-weight:700">限${p.quota}条</span>`:' <span style="color:var(--muted)">默认配额</span>'}</div>`).join('');
+  box.innerHTML='<div style="font-weight:700;color:var(--muted);margin-bottom:4px">识别预览：</div>'+parsed.map((p,i)=>`<div style="padding:2px 0">${i+1}. ${p.name}${p.quota!==null?` <span style="color:var(--blue);font-weight:700">总上限${p.quota}条</span>`:' <span style="color:var(--muted)">默认（每任务每日6条）</span>'}</div>`).join('');
 }
 function openM(mode){if(ROLE!=='admin')return;mMode=mode;document.getElementById('mTitle').textContent=mode==='acc'?'新增账号':'新增任务';
   document.getElementById('mVal').value='';document.getElementById('mQuota').value='';

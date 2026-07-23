@@ -53,6 +53,8 @@ function migrateAccountUsed() {
       if (a.taskId && state.tasks.some(t => t.id === a.taskId)) a.used[a.taskId] = old;
     }
     if (!a.used || typeof a.used !== 'object') a.used = {};
+    if (a.disabled === undefined) a.disabled = false;
+    if (a.quota === undefined) a.quota = null;
   }
 }
 function loadState() {
@@ -92,17 +94,19 @@ function typeName(type) { const t = state.types.find(x => x.id === type); return
 function typeColor(type) { const t = state.types.find(x => x.id === type); return t ? t.color : '#64748b'; }
 function accountUsed(a, taskId) { return (a.used && a.used[taskId]) || 0; }
 function accountTotalUsed(a) { return Object.values(a.used || {}).reduce((s, n) => s + n, 0); }
-function accountCapacity(a) { return Math.max(1, state.tasks.filter(t => t.type === a.type).length) * QUOTA; }
+function accountQuota(a) { return (a.quota === undefined || a.quota === null) ? QUOTA : Math.max(1, parseInt(a.quota, 10) || 1); }
+function accountCapacity(a) { return Math.max(1, state.tasks.filter(t => t.type === a.type).length) * accountQuota(a); }
 function typeTasks(type) { return state.tasks.filter(t => t.type === type); }
 
 // 服务端原子分配：每个账号对每个任务都有 QUOTA 条额度；谁先请求谁先占，避免重复
 function allocate(type, need, who) {
   const tasks = typeTasks(type);
-  const accs = state.accounts.filter(a => a.type === type);
+  const accs = state.accounts.filter(a => a.type === type && !a.disabled);
   let pairs = [];
   for (const a of accs) {
+    const q = accountQuota(a);
     for (const t of tasks) {
-      const left = QUOTA - (a.used[t.id] || 0);
+      const left = q - (a.used[t.id] || 0);
       if (left > 0) pairs.push({ a, t, left });
     }
   }
@@ -207,16 +211,17 @@ const server = http.createServer(async (req, res) => {
     }
     if (url === '/api/inc') {
       const a = state.accounts.find(x => x.id === body.id);
-      if (a) {
+      if (a && !a.disabled) {
         const tasks = typeTasks(a.type);
+        const q = accountQuota(a);
         const cand = tasks
           .map(t => ({ t, used: a.used[t.id] || 0 }))
-          .filter(x => x.used < QUOTA)
+          .filter(x => x.used < q)
           .sort((x, y) => x.used - y.used || (x.t.id === a.taskId ? -1 : 0));
         if (cand.length) {
           const t = cand[0].t;
           a.used[t.id] = (a.used[t.id] || 0) + 1;
-          log('inc', `「${a.name}」任务 ${t.taskId} +1（${a.used[t.id]}/${QUOTA}）`, who);
+          log('inc', `「${a.name}」任务 ${t.taskId} +1（${a.used[t.id]}/${q}）`, who);
           saveState(); broadcast();
         }
       }
@@ -234,7 +239,7 @@ const server = http.createServer(async (req, res) => {
           const t = cand[0].t;
           a.used[t.id] = (a.used[t.id] || 0) - 1;
           if (!a.used[t.id]) delete a.used[t.id];
-          log('dec', `「${a.name}」任务 ${t.taskId} −1（${a.used[t.id] || 0}/${QUOTA}）`, who);
+          log('dec', `「${a.name}」任务 ${t.taskId} −1（${a.used[t.id] || 0}/${accountQuota(a)}）`, who);
           saveState(); broadcast();
         }
       }
@@ -245,12 +250,14 @@ const server = http.createServer(async (req, res) => {
       const type = body.type;
       const taskId = body.taskId;
       if (!validType(type) || !taskId) return send(res, 400, { error: '参数错误' });
+      const quota = body.quota === undefined || body.quota === '' ? null : parseInt(body.quota, 10);
       let added = 0;
       for (const n of names) {
         const name = (n || '').trim();
         if (!name) continue;
-        state.accounts.push({ id: uid(), name, type, taskId, used: 0, createdAt: Date.now() });
-        log('account', `新增账号「${name}」(${typeName(type)})`, who);
+        state.accounts.push({ id: uid(), name, type, taskId, used: 0, disabled: false, quota, createdAt: Date.now() });
+        const qText = quota ? `（限${quota}条/任务）` : '';
+        log('account', `新增账号「${name}」(${typeName(type)})${qText}`, who);
         added++;
       }
       if (added) { saveState(); broadcast(); }
@@ -283,15 +290,50 @@ const server = http.createServer(async (req, res) => {
       log('reset', '手动刷新，今日计数清零', who); saveState(); broadcast();
       return send(res, 200, { ok: true });
     }
+    if (url === '/api/account/toggle') {
+      const a = state.accounts.find(x => x.id === body.id);
+      if (a) { a.disabled = !a.disabled; log('account', `「${a.name}」${a.disabled ? '已停用' : '已启用'}`, who); saveState(); broadcast(); }
+      return send(res, 200, { ok: true, disabled: a ? a.disabled : false });
+    }
+    if (url === '/api/account/quota') {
+      const a = state.accounts.find(x => x.id === body.id);
+      if (a) {
+        const q = body.quota === undefined || body.quota === '' || body.quota === null ? null : Math.max(1, parseInt(body.quota, 10));
+        a.quota = q;
+        log('account', `「${a.name}」配额设为 ${q === null ? '默认' : q + '条/任务'}`, who);
+        saveState(); broadcast();
+      }
+      return send(res, 200, { ok: true, quota: a ? a.quota : null });
+    }
   }
 
   if (req.method === 'DELETE' && url.startsWith('/api/account/')) {
     const role = roleOfHeader(req);
     if (!role) return send(res, 403, { error: '需要访问密码' });
     if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
+    const body = await readBody(req);
+    const who = ((body && body.adminName) || '').trim() || '管理员';
     const id = url.split('/').pop();
+    const a = state.accounts.find(x => x.id === id);
     state.accounts = state.accounts.filter(x => x.id !== id);
+    if (a) log('account', `删除账号「${a.name}」(${typeName(a.type)})`, who);
     saveState(); broadcast();
+    return send(res, 200, { ok: true });
+  }
+  if (req.method === 'DELETE' && url.startsWith('/api/task/')) {
+    const role = roleOfHeader(req);
+    if (!role) return send(res, 403, { error: '需要访问密码' });
+    if (role !== 'admin') return send(res, 403, { error: '需要管理员权限' });
+    const body = await readBody(req);
+    const who = ((body && body.adminName) || '').trim() || '管理员';
+    const id = url.split('/').pop();
+    const t = state.tasks.find(x => x.id === id);
+    if (t) {
+      state.tasks = state.tasks.filter(x => x.id !== id);
+      // 清理已不存在的任务在账号 used 中的计数
+      state.accounts.forEach(a => { if (a.used && a.used[id]) delete a.used[id]; });
+      log('task', `删除任务 ${t.taskId} (${typeName(t.type)})`, who); saveState(); broadcast();
+    }
     return send(res, 200, { ok: true });
   }
 

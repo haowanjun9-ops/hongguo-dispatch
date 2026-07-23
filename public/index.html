@@ -65,6 +65,8 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
 .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .acc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);position:relative}
 .acc.full{opacity:.55}
+.acc.disabled{opacity:.5;background:#f8fafc}
+.acc.disabled .nm{text-decoration:line-through}
 .acc .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .acc .nm{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
@@ -172,6 +174,8 @@ header .live .d{width:8px;height:8px;border-radius:50%;background:var(--green);b
       <select id="mType" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none">
         <option value="real">真人</option><option value="ai">AI</option><option value="second">二剪</option>
       </select></div>
+    <div id="mQuotaWrap" style="margin-bottom:14px;display:none"><label style="font-size:12px;font-weight:700;color:var(--muted)">每任务上限（留空=默认6条）</label>
+      <input id="mQuota" type="number" min="1" placeholder="6" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px;outline:none"></div>
     <div style="display:flex;gap:10px"><button id="mCancel" style="flex:1;padding:9px;border:1px solid var(--border);background:#fff;border-radius:9px;font-weight:700;cursor:pointer">取消</button><button id="mOk" style="flex:1;padding:9px;border:none;background:var(--blue);color:#fff;border-radius:9px;font-weight:700;cursor:pointer">保存</button></div>
   </div>
 </div>
@@ -186,9 +190,10 @@ function authH(){return PW?{'x-passcode':PW}:{};}
 function withName(obj){const n=localStorage.getItem('hg_name');return n?Object.assign({},obj,{adminName:n}):obj;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
 function taskIdOf(id){const t=S.tasks.find(x=>x.id===id);return t?t.taskId:'—';}
-function remaining(type){const tasks=S.tasks.filter(t=>t.type===type),accs=S.accounts.filter(a=>a.type===type);return accs.reduce((sum,a)=>sum+tasks.reduce((s,t)=>s+(QUOTA-(a.used[t.id]||0)),0),0);}
+function accountQuota(a){return (a.quota===undefined||a.quota===null)?QUOTA:Math.max(1,parseInt(a.quota,10)||1);}
 function accountTotalUsed(a){return Object.values(a.used||{}).reduce((s,n)=>s+n,0);}
-function accountCapacity(a){return Math.max(1,S.tasks.filter(t=>t.type===a.type).length)*QUOTA;}
+function accountCapacity(a){return Math.max(1,S.tasks.filter(t=>t.type===a.type).length)*accountQuota(a);}
+function remaining(type){const tasks=S.tasks.filter(t=>t.type===type),accs=S.accounts.filter(a=>a.type===type&&!a.disabled);return accs.reduce((sum,a)=>{const q=accountQuota(a);return sum+tasks.reduce((s,t)=>s+(q-(a.used[t.id]||0)),0);},0);}
 
 function render(){
   if(!S)return;
@@ -197,18 +202,21 @@ function render(){
   const types=Object.keys(TYPES);
   document.getElementById('cards').innerHTML=types.map(type=>{
     const c=TYPE_COLORS[type]||'#64748b';
-    const accs=S.accounts.filter(a=>a.type===type);
+    const accs=S.accounts.filter(a=>a.type===type&&!a.disabled);
     const tasks=S.tasks.filter(t=>t.type===type);
-    const cap=accs.length*tasks.length*QUOTA;
+    const hasCustom=accs.some(a=>accountQuota(a)!==QUOTA);
+    const cap=accs.reduce((s,a)=>s+tasks.length*accountQuota(a),0);
     const used=accs.reduce((s,a)=>s+accountTotalUsed(a),0);
     const rem=cap-used;
     const avail=accs.filter(a=>accountTotalUsed(a)<accountCapacity(a)).length;
+    const disabledCount=S.accounts.filter(a=>a.type===type&&a.disabled).length;
     const pct=cap?Math.round(used/cap*100):0;
+    const quotaText=hasCustom?'（含自定义配额）':`× ${QUOTA}`;
     return `<div class="card"><span class="bar" style="background:${c}"></span>
       <div class="t">${TYPES[type]}</div>
       <div class="n" style="color:${c}">${rem}<small> 条剩余</small></div>
       <div class="s">可用 ${avail} 号 · 已传 ${used}/${cap}</div>
-      <div class="s">${accs.length} 账号 × ${tasks.length} 任务 × ${QUOTA} = ${cap}（${Math.round(pct)}% 已用）</div></div>`;
+      <div class="s">${accs.length} 账号 × ${tasks.length} 任务 ${quotaText} = ${cap}（${Math.round(pct)}% 已用）${disabledCount?' · '+disabledCount+'个已停用':''}</div></div>`;
   }).join('')||'<div class="empty">暂无类型</div>';
   // 提示
   const hintType=dispType||types[0]||'';
@@ -220,28 +228,30 @@ function render(){
   document.getElementById('cTask').textContent=S.tasks.length;
   const admin=ROLE==='admin';
   if(tab==='acc'){
-    const list=S.accounts.slice().sort((a,b)=>(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
+    const list=S.accounts.slice().sort((a,b)=>((a.disabled?1:0)-(b.disabled?1:0))||(accountTotalUsed(a)-accountTotalUsed(b))||a.name.localeCompare(b.name,'zh'));
     document.getElementById('list').innerHTML=list.map(a=>{
       const tasks=S.tasks.filter(t=>t.type===a.type);
+      const q=accountQuota(a);
       const total=accountTotalUsed(a), cap=accountCapacity(a), lf=cap-total;
       const full=lf<=0, pct=Math.min(100,Math.round(total/cap*100));
       const c=TYPE_COLORS[a.type]||'#64748b';
-      const taskLines=tasks.map(t=>`任务 ${t.taskId}: ${a.used[t.id]||0}/${QUOTA}`).join(' · ');
-      return `<div class="acc ${full?'full':''}">
+      const taskLines=tasks.map(t=>`任务 ${t.taskId}: ${a.used[t.id]||0}/${q}`).join(' · ');
+      const quotaInput=admin?`<label style="font-size:11px;color:var(--muted);margin-left:auto">限<input class="quota" data-quota="${a.id}" type="number" min="1" value="${q===QUOTA?'':q}" placeholder="${QUOTA}" style="width:38px;text-align:center;margin:0 4px;padding:2px 4px;border:1px solid var(--border);border-radius:5px">条/任务</label>`:'';
+      return `<div class="acc ${full?'full':''} ${a.disabled?'disabled':''}">
         ${admin?`<button class="x" data-del="${a.id}">✕</button>`:''}
-        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span></div>
+        <div class="top"><div class="nm" title="${a.name}">${a.name}</div><span class="tag" style="${tagStyle(a.type)}">${TYPES[a.type]||a.type}</span>${a.disabled?'<span class="tag" style="background:#fee2e2;color:#dc2626">已停用</span>':''}</div>
         <div class="tk">${taskLines}</div>
         <div class="bar ${full?'full':''}"><i style="width:${pct}%;background:${c}"></i></div>
-        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}</span></div>
-        ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0?'disabled':''}>−1</button></div>`:''}
+        <div class="mt"><span class="lf" style="color:${c}">剩 ${lf} 条</span><span class="st">${total}/${cap}</span>${quotaInput}</div>
+        ${admin?`<div class="bt"><button class="p" data-inc="${a.id}" ${full||a.disabled?'disabled':''}>+1</button><button data-dec="${a.id}" ${total<=0||a.disabled?'disabled':''}>−1</button><button class="toggle" data-toggle="${a.id}" style="margin-left:auto;background:${a.disabled?'#15a34a':'#64748b'}">${a.disabled?'启用':'停用'}</button></div>`:''}
       </div>`;
     }).join('');
   }else{
     document.getElementById('list').innerHTML=S.tasks.map(t=>{
-      const accs=S.accounts.filter(a=>a.type===t.type);
-      const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.length*QUOTA, rem=cap-used;
+      const accs=S.accounts.filter(a=>a.type===t.type&&!a.disabled);
+      const used=accs.reduce((s,a)=>s+(a.used[t.id]||0),0), cap=accs.reduce((s,a)=>s+accountQuota(a),0), rem=cap-used;
       const c=TYPE_COLORS[t.type]||'#64748b';
-      return `<div class="tsk"><div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
+      return `<div class="tsk">${admin?`<button class="x" data-deltask="${t.id}" style="float:right;background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:16px">✕</button>`:''}<div class="id"><span class="tag" style="${tagStyle(t.type)}">${TYPES[t.type]||t.type}</span>${t.taskId}</div>
         <div class="m">${accs.length} 个账号可接 · 今日 ${used}/${cap} · 剩余 <b style="color:${c}">${rem}</b></div></div>`;
     }).join('')||'<div class="empty">暂无任务</div>';
   }
@@ -354,17 +364,29 @@ document.getElementById('go').onclick=async()=>{
 // 列表交互（管理员）
 document.getElementById('list').addEventListener('click',async e=>{
   if(ROLE!=='admin')return;
-  const inc=e.target.dataset.inc,dec=e.target.dataset.dec,del=e.target.dataset.del;
+  const inc=e.target.dataset.inc,dec=e.target.dataset.dec,del=e.target.dataset.del,toggle=e.target.dataset.toggle,deltask=e.target.dataset.deltask;
   if(inc){await fetch('/api/inc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:inc}))});}
   else if(dec){await fetch('/api/dec',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:dec}))});}
-  else if(del){if(confirm('删除该账号？')){await fetch('/api/account/'+del,{method:'DELETE',headers:authH()});}}
+  else if(del){if(confirm('删除该账号？')){await fetch('/api/account/'+del,{method:'DELETE',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({}))});}}
+  else if(toggle){await fetch('/api/account/toggle',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:toggle}))});}
+  else if(deltask){if(confirm('删除该任务？绑定此任务的账号计数将保留但不会分配到此任务。')){await fetch('/api/task/'+deltask,{method:'DELETE',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({}))});}}
+});
+document.getElementById('list').addEventListener('change',async e=>{
+  if(ROLE!=='admin')return;
+  const qid=e.target.dataset.quota;
+  if(qid){
+    const v=e.target.value.trim();
+    await fetch('/api/account/quota',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({id:qid,quota:v===''?null:parseInt(v,10)}))});
+  }
 });
 document.querySelector('.tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');render();});
 // 弹窗（管理员）
 let mMode='acc';
 function openM(mode){if(ROLE!=='admin')return;mMode=mode;document.getElementById('mTitle').textContent=mode==='acc'?'新增账号':'新增任务';
-  document.getElementById('mVal').value='';document.getElementById('m').style.display='flex';document.getElementById('mVal').focus();}
+  document.getElementById('mVal').value='';document.getElementById('mQuota').value='';
+  document.getElementById('mQuotaWrap').style.display=mode==='acc'?'block':'none';
+  document.getElementById('m').style.display='flex';document.getElementById('mVal').focus();}
 document.getElementById('addAcc').onclick=()=>openM('acc');
 document.getElementById('addTask').onclick=()=>openM('task');
 document.getElementById('addType').onclick=async()=>{
@@ -383,7 +405,9 @@ document.getElementById('mOk').onclick=async()=>{
   if(!lines.length){toast('请填写内容');return;}
   if(mMode==='acc'){
     const taskId=S.tasks.find(t=>t.type===type)?.id||'';
-    const r=await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({names:lines,type,taskId}))});
+    const qv=document.getElementById('mQuota').value.trim();
+    const quota=qv?parseInt(qv,10):undefined;
+    const r=await fetch('/api/account',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authH()),body:JSON.stringify(withName({names:lines,type,taskId,quota}))});
     const d=await r.json().catch(()=>({}));
     toast('已添加 '+(d.added||lines.length)+' 个账号');
   }else{

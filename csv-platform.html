@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CSV 数据整理平台</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 30px;
+  }
+
+  header h1 {
+    font-size: 2.2em;
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+
+  header p {
+    margin-top: 8px;
+    opacity: 0.9;
+    font-size: 1.05em;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 30px;
+    margin-bottom: 24px;
+  }
+
+  .upload-area {
+    border: 2px dashed #c4c9f0;
+    border-radius: 12px;
+    padding: 50px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9ff;
+  }
+
+  .upload-area:hover,
+  .upload-area.dragover {
+    border-color: #667eea;
+    background: #eef0ff;
+    transform: translateY(-2px);
+  }
+
+  .upload-area .icon {
+    font-size: 3em;
+    margin-bottom: 12px;
+  }
+
+  .upload-area h3 {
+    color: #4a5568;
+    margin-bottom: 6px;
+  }
+
+  .upload-area p {
+    color: #a0aec0;
+    font-size: 0.9em;
+  }
+
+  .upload-area input[type="file"] {
+    display: none;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    position: relative;
+  }
+
+  .search-box input {
+    width: 320px;
+    padding: 10px 14px 10px 40px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.95em;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus {
+    border-color: #667eea;
+  }
+
+  .search-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9em;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.92em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+  }
+
+  .btn-secondary {
+    background: #f0f4ff;
+    color: #667eea;
+  }
+
+  .btn-secondary:hover {
+    background: #e0e8ff;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: #718096;
+    border: 1.5px solid #e2e8f0;
+  }
+
+  .btn-ghost:hover {
+    background: #f7fafc;
+    color: #4a5568;
+  }
+
+  .info-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    color: #718096;
+    font-size: 0.9em;
+  }
+
+  .info-bar span strong {
+    color: #4a5568;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+
+  thead {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    position: sticky;
+    top: 0;
+  }
+
+  th {
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  th:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  th .sort-icon {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.75em;
+    opacity: 0.6;
+  }
+
+  th.sorted .sort-icon {
+    opacity: 1;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #edf2f7;
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover {
+    background: #f7fafc;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+
+  tbody tr:nth-child(even):hover {
+    background: #f0f2f5;
+  }
+
+  td {
+    padding: 12px 16px;
+    color: #4a5568;
+    vertical-align: middle;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  td a {
+    color: #667eea;
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  td a:hover {
+    text-decoration: underline;
+  }
+
+  td.cell-wrap {
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .pagination button {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #4a5568;
+    transition: all 0.2s;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+  }
+
+  .pagination button.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .page-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #718096;
+    font-size: 0.9em;
+  }
+
+  .page-size select {
+    padding: 6px 10px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #a0aec0;
+  }
+
+  .empty-state .icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #718096;
+  }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 14px 22px;
+    background: #48bb78;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .toast.error {
+    background: #f56565;
+  }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 768px) {
+    .search-box input { width: 100%; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar-left, .toolbar-right { justify-content: center; }
+    td, th { padding: 10px 12px; font-size: 0.85em; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📊 CSV 数据整理平台</h1>
+    <p>上传 CSV 文件，自动整理为清晰的表格视图</p>
+  </header>
+
+  <div class="card" id="uploadCard">
+    <div class="upload-area" id="uploadArea">
+      <div class="icon">📁</div>
+      <h3>点击或拖拽 CSV 文件到此处</h3>
+      <p>支持 .csv 格式，自动解析表头和数据</p>
+      <input type="file" id="fileInput" accept=".csv" />
+    </div>
+  </div>
+
+  <div class="card hidden" id="dataCard">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="搜索所有字段..." />
+        </div>
+        <select id="filterColumn" class="page-size" style="padding:10px 14px;border-radius:10px;border:1.5px solid #e2e8f0;outline:none;">
+          <option value="">所有列</option>
+        </select>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-secondary" id="exportBtn">📥 导出 Excel</button>
+        <button class="btn btn-ghost" id="resetBtn">🔄 重新上传</button>
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <span>📋 总行数: <strong id="totalRows">0</strong></span>
+      <span>🔍 匹配: <strong id="filteredRows">0</strong></span>
+      <span>📄 当前页: <strong id="currentPage">1</strong> / <strong id="totalPages">1</strong></span>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="dataTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <div class="page-size">
+        <span>每页显示</span>
+        <select id="pageSize">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+        </select>
+        <span>条</span>
+      </div>
+      <button id="prevPage">‹ 上一页</button>
+      <div id="pageNumbers" style="display:flex;gap:6px;"></div>
+      <button id="nextPage">下一页 ›</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const uploadArea = document.getElementById('uploadArea');
+  const fileInput = document.getElementById('fileInput');
+  const uploadCard = document.getElementById('uploadCard');
+  const dataCard = document.getElementById('dataCard');
+  const searchInput = document.getElementById('searchInput');
+  const filterColumn = document.getElementById('filterColumn');
+  const tableHead = document.getElementById('tableHead');
+  const tableBody = document.getElementById('tableBody');
+  const totalRowsEl = document.getElementById('totalRows');
+  const filteredRowsEl = document.getElementById('filteredRows');
+  const currentPageEl = document.getElementById('currentPage');
+  const totalPagesEl = document.getElementById('totalPages');
+  const pageSizeSel = document.getElementById('pageSize');
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+  const pageNumbers = document.getElementById('pageNumbers');
+  const exportBtn = document.getElementById('exportBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const toast = document.getElementById('toast');
+
+  let rawData = [];
+  let headers = [];
+  let sortKey = null;
+  let sortDir = 'asc';
+  let currentPage = 1;
+
+  function showToast(msg, isError) {
+    toast.textContent = msg;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { toast.classList.remove('show'); }, 2500);
+  }
+
+  uploadArea.addEventListener('click', () => fileInput.click());
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      showToast('请上传 CSV 文件', true);
+      return;
+    }
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      encoding: 'UTF-8',
+      complete: (results) => {
+        if (!results.data.length) {
+          showToast('CSV 文件为空或格式错误', true);
+          return;
+        }
+        headers = results.meta.fields || Object.keys(results.data[0] || {});
+        rawData = results.data.filter(r => Object.values(r).some(v => v !== null && v !== ''));
+        if (!rawData.length) {
+          showToast('未解析到有效数据', true);
+          return;
+        }
+        initTable();
+        uploadCard.classList.add('hidden');
+        dataCard.classList.remove('hidden');
+        showToast(`成功加载 ${rawData.length} 条数据`);
+      },
+      error: () => showToast('解析 CSV 失败', true)
+    });
+  }
+
+  function initTable() {
+    // Reset state
+    sortKey = null;
+    sortDir = 'asc';
+    currentPage = 1;
+
+    // Build filter column select
+    filterColumn.innerHTML = '<option value="">所有列</option>';
+    headers.forEach((h, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = h;
+      filterColumn.appendChild(opt);
+    });
+
+    renderHead();
+    render();
+  }
+
+  function renderHead() {
+    tableHead.innerHTML = '';
+    const tr = document.createElement('tr');
+    headers.forEach((h, i) => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      th.dataset.index = i;
+      if (sortKey === String(i)) {
+        th.classList.add('sorted');
+        th.innerHTML = h + ' <span class="sort-icon">' + (sortDir === 'asc' ? '▲' : '▼') + '</span>';
+      }
+      th.addEventListener('click', () => {
+        if (sortKey === String(i)) {
+          sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortKey = String(i);
+          sortDir = 'asc';
+        }
+        renderHead();
+        render();
+      });
+      tr.appendChild(th);
+    });
+    tableHead.appendChild(tr);
+  }
+
+  function getFilteredData() {
+    const q = searchInput.value.trim().toLowerCase();
+    let data = rawData;
+    if (q) {
+      const colIdx = filterColumn.value;
+      data = rawData.filter(row => {
+        if (colIdx === '') {
+          return headers.some(h => String(row[h] ?? '').toLowerCase().includes(q));
+        }
+        const h = headers[parseInt(colIdx, 10)];
+        return String(row[h] ?? '').toLowerCase().includes(q);
+      });
+    }
+    return data;
+  }
+
+  function getSortedData(data) {
+    if (sortKey === null) return data;
+    const key = headers[parseInt(sortKey, 10)];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...data].sort((a, b) => {
+      let va = String(a[key] ?? '');
+      let vb = String(b[key] ?? '');
+      // Try numeric comparison
+      const na = parseFloat(va);
+      const nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb) && va.trim() !== '' && vb.trim() !== '') {
+        return (na - nb) * dir;
+      }
+      return va.localeCompare(vb, 'zh-CN') * dir;
+    });
+  }
+
+  function isUrl(str) {
+    return /^https?:\/\//i.test(str);
+  }
+
+  function render() {
+    const filtered = getFilteredData();
+    const sorted = getSortedData(filtered);
+    const pageSize = parseInt(pageSizeSel.value, 10);
+    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * pageSize;
+    const pageData = sorted.slice(start, start + pageSize);
+
+    // Update info
+    totalRowsEl.textContent = rawData.length;
+    filteredRowsEl.textContent = sorted.length;
+    currentPageEl.textContent = currentPage;
+    totalPagesEl.textContent = totalPages;
+
+    // Render body
+    tableBody.innerHTML = '';
+    if (!pageData.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = headers.length;
+      td.className = 'empty-state';
+      td.innerHTML = '<div class="icon">🔍</div><div>暂无数据</div>';
+      tr.appendChild(td);
+      tableBody.appendChild(tr);
+    } else {
+      pageData.forEach(row => {
+        const tr = document.createElement('tr');
+        headers.forEach(h => {
+          const td = document.createElement('td');
+          const val = row[h] ?? '';
+          const strVal = String(val);
+          if (isUrl(strVal)) {
+            const a = document.createElement('a');
+            a.href = strVal;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = strVal.length > 50 ? strVal.slice(0, 50) + '...' : strVal;
+            a.title = strVal;
+            td.appendChild(a);
+          } else {
+            td.textContent = strVal;
+            if (strVal.length > 80) td.classList.add('cell-wrap');
+          }
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      });
+    }
+
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    pageNumbers.innerHTML = '';
+    let start = Math.max(1, currentPage - 3);
+    let end = Math.min(totalPages, start + 6);
+    if (end - start < 6) start = Math.max(1, end - 6);
+
+    if (start > 1) {
+      addPageBtn(1);
+      if (start > 2) addEllipsis();
+    }
+    for (let i = start; i <= end; i++) addPageBtn(i);
+    if (end < totalPages) {
+      if (end < totalPages - 1) addEllipsis();
+      addPageBtn(totalPages);
+    }
+
+    prevPageBtn.disabled = currentPage <= 1;
+    nextPageBtn.disabled = currentPage >= totalPages;
+  }
+
+  function addPageBtn(n) {
+    const btn = document.createElement('button');
+    btn.textContent = n;
+    if (n === currentPage) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      currentPage = n;
+      render();
+    });
+    pageNumbers.appendChild(btn);
+  }
+
+  function addEllipsis() {
+    const span = document.createElement('span');
+    span.textContent = '...';
+    span.style.color = '#a0aec0';
+    span.style.padding = '0 4px';
+    pageNumbers.appendChild(span);
+  }
+
+  searchInput.addEventListener('input', () => {
+    currentPage = 1;
+    render();
+  });
+  filterColumn.addEventListener('change', () => {
+    currentPage = 1;
+    render();
+  });
+  pageSizeSel.addEventListener('change', () => {
+    currentPage = 1;
+    render();
+  });
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; render(); }
+  });
+  nextPageBtn.addEventListener('click', () => {
+    const totalPages = parseInt(totalPagesEl.textContent, 10);
+    if (currentPage < totalPages) { currentPage++; render(); }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    rawData = [];
+    headers = [];
+    sortKey = null;
+    uploadCard.classList.remove('hidden');
+    dataCard.classList.add('hidden');
+    fileInput.value = '';
+    searchInput.value = '';
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const filtered = getFilteredData();
+    const sorted = getSortedData(filtered);
+    if (!sorted.length) {
+      showToast('没有可导出的数据', true);
+      return;
+    }
+    const csv = Papa.unparse({
+      fields: headers,
+      data: sorted.map(row => headers.map(h => row[h] ?? ''))
+    });
+    // Add BOM for Excel Chinese support
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'export_' + Date.now() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`已导出 ${sorted.length} 条数据`);
+  });
+})();
+</script>
+</body>
+</html>

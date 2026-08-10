@@ -1,0 +1,42 @@
+# ========================================
+# 星广报表数据提取 - 浏览器控制台脚本
+# ========================================
+
+# 快速使用方法：
+
+# 1. 在浏览器中按 F12 打开开发者工具
+# 2. 切换到 Console (控制台) 标签
+# 3. 复制以下脚本的完整内容并粘贴到控制台
+# 4. 按回车键执行
+
+# 脚本文件位置：/workspace/console_extract_complete.js
+
+# 脚本功能：
+# - 自动遍历所有38页数据
+# - 提取完整表格数据
+# - 筛选消耗>2000的记录
+# - 自动下载CSV文件
+# - 预计执行时间：2-3分钟
+
+# 执行后：
+# - CSV文件会自动下载到浏览器默认下载目录
+# - 文件名格式：star_report_cost_over_2000_2026-08-10_XXXXXX.csv
+# - 数据保存在全局变量：
+#   * window.starReportAllData (所有数据)
+#   * window.starReportFilteredData (筛选后数据)
+
+# 如果需要导出JSON数据，在控制台执行：
+"""
+const data = JSON.stringify(window.starReportFilteredData, null, 2);
+const blob = new Blob([data], {type: 'application/json'});
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'star_report_filtered_data.json';
+a.click();
+"""
+
+# 然后运行Python脚本发送飞书消息：
+# python /workspace/process_and_send.py
+
+# ========================================

@@ -1,0 +1,411 @@
+=== PAGE 1 SNAPSHOT ===
+### Action: snapshot [Success]
+
+### Page Snapshot CELL DATA:
+- role: columnheader      name: 素材ID（巨量）      ref: e1293
+- role: columnheader      name: 标题      ref: e1294
+- role: columnheader      name: 星图任务ID      ref: e1295
+- role: columnheader      name: 星图任务名称      ref: e1296
+- role: columnheader      name: 抖音号昵称      ref: e1297
+- role: columnheader      name: 抖音号      ref: e1298
+- role: columnheader      name: 视频播放链接      ref: e1299
+- role: columnheader      name: 下单账户名称      ref: e1300
+- role: columnheader      name: 消耗      ref: e1301
+- role: columnheader      name: 产品名称      ref: e1302
+- role: columnheader      name: 数据统计日期      ref: e1303
+- role: cell      name: 汇总      ref: e1304
+- role: cell      name: 75773.4696      ref: e1305
+- role: cell      name: 2026-08-13      ref: e1306
+- role: cell      name: 7665252172604293120      ref: e1307
+- role: cell      name: 碎片时间解闷，打开红果畅快刷短剧 #红果短剧 #AI #HWJLYM      ref: e1308
+- role: cell      name: 7626972396727304228      ref: e1309
+- role: cell      name: 红果-NG星广ad-短剧综述AI-鲸鱼      ref: e1310
+- role: cell      name: 小余爱追剧      ref: e1311
+- role: cell      name: 38139081311      ref: e1312
+- role: cell      name: "https://douyin.com/video/7665251894918466879"      ref: e1313
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1314
+- role: cell      name: 22793.08      ref: e1315
+- role: cell      name: 2026-08-13      ref: e1316
+- role: cell      name: 7670154435016540169      ref: e1317
+- role: cell      name: 长久坚守每日签到，累计打卡时日越多福利等级越高 #抖音商城 #签到 #网赚 #福利多多 #剪辑制作      ref: e1318
+- role: cell      name: 7657431178504634394      ref: e1319
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1320
+- role: cell      name: 苏苏说说看      ref: e1321
+- role: cell      name: 97720499428      ref: e1322
+- role: cell      name: "https://douyin.com/video/7670154522911657250"      ref: e1323
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1324
+- role: cell      name: 18832.88      ref: e1325
+- role: cell      name: 2026-08-13      ref: e1326
+- role: cell      name: 7670531977377202230      ref: e1327
+- role: cell      name: 简单一键签到，省去复杂操作领取福利 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1328
+- role: cell      name: 7641104807520763955      ref: e1329
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1330
+- role: cell      name: 我的智能外挂      ref: e1331
+- role: cell      name: 97830164197      ref: e1332
+- role: cell      name: "https://douyin.com/video/7670532019411062056"      ref: e1333
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1334
+- role: cell      name: 3630.2      ref: e1335
+- role: cell      name: 2026-08-13      ref: e1336
+- role: cell      name: 7579978533608062976      ref: e1337
+- role: cell      name: 熬夜冠军：这短剧我能再追十集mh #番茄小说 #爆火短剧 #免费短剧      ref: e1338
+- role: cell      name: 7576919195879833609      ref: e1339
+- role: cell      name: koc番茄小说-NG星广ad-真人短剧综述-鲸鱼      ref: e1340
+- role: cell      name: 外卖阿彭      ref: e1341
+- role: cell      name: 42068123484      ref: e1342
+- role: cell      name: "https://douyin.com/video/7579978441886403892"      ref: e1343
+- role: cell      name: KOC达人-番茄小说-鲸鱼-站内-1      ref: e1344
+- role: cell      name: 2375.87      ref: e1345
+- role: cell      name: 2026-08-13      ref: e1346
+- role: cell      name: 7665251108878778395      ref: e1347
+- role: cell      name: 居家休闲神器，红果海量短剧随便看 #红果短剧 #AI #HWJLYM      ref: e1348
+- role: cell      name: 7626972396727304228      ref: e1349
+- role: cell      name: 红果-NG星广ad-短剧综述AI-鲸鱼      ref: e1350
+- role: cell      name: 小余爱追剧      ref: e1351
+- role: cell      name: 38139081311      ref: e1352
+- role: cell      name: "https://douyin.com/video/7665251159195618602"      ref: e1353
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1354
+- role: cell      name: 2114.79      ref: e1355
+- role: cell      name: 2026-08-13      ref: e1356
+- role: cell      name: 7657530025710420006      ref: e1357
+- role: cell      name: 长期坚持签到，超值礼品稳稳到手 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1358
+- role: cell      name: 7641104807520763955      ref: e1359
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1360
+- role: cell      name: 今天下饭看什么      ref: e1361
+- role: cell      name: 39972332420      ref: e1362
+- role: cell      name: "https://douyin.com/video/7657530282429451572"      ref: e1363
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1364
+- role: cell      name: 1238.51      ref: e1365
+- role: cell      name: 2026-08-13      ref: e1366
+- role: cell      name: 7669781772021596170      ref: e1367
+- role: cell      name: 每日打开抖音商城签到，随手领取专属消费红包 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1368
+- role: cell      name: 7641105772698173449      ref: e1369
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到02-鲸鱼      ref: e1370
+- role: cell      name: 超荟看剧      ref: e1371
+- role: cell      name: 84179057014      ref: e1372
+- role: cell      name: "https://douyin.com/video/7669781819272744198"      ref: e1373
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1374
+- role: cell      name: 1155.64      ref: e1375
+- role: cell      name: 2026-08-13      ref: e1376
+- role: cell      name: 7670530647199514687      ref: e1377
+- role: cell      name: 持之以恒日常打卡，签到时长越久奖励档次越高 #抖音商城 #签到 #网赚 #福利多多 #剪辑制作      ref: e1378
+- role: cell      name: 7657431178504634394      ref: e1379
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1380
+- role: cell      name: 信息差喇叭      ref: e1381
+- role: cell      name: 66610925177      ref: e1382
+- role: cell      name: "https://douyin.com/video/7670530694120082714"      ref: e1383
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1384
+- role: cell      name: 1114.39      ref: e1385
+- role: cell      name: 2026-08-13      ref: e1386
+- role: cell      name: 7657491700799012915      ref: e1387
+- role: cell      name: 结伴打卡乐趣多，大奖轻松瓜分 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1388
+- role: cell      name: 7641104807520763955      ref: e1389
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1390
+- role: cell      name: 追剧充电站      ref: e1391
+- role: cell      name: 50669015630      ref: e1392
+- role: cell      name: "https://douyin.com/video/7657491794162208054"      ref: e1393
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1394
+- role: cell      name: 929.77      ref: e1395
+- role: cell      name: 2026-08-13      ref: e1396
+- role: cell      name: 7670530015553191945      ref: e1397
+- role: cell      name: 积攒每一天打卡履历，时长递增开启重磅好礼 #抖音商城 #签到 #网赚 #福利多多 #剪辑制作      ref: e1398
+- role: cell      name: 7657431178504634394      ref: e1399
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1400
+- role: cell      name: 动态漫不打烊      ref: e1401
+- role: cell      name: 29826331833      ref: e1402
+- role: cell      name: "https://douyin.com/video/7670530076391296294"      ref: e1403
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1404
+- role: cell      name: 880.8      ref: e1405
+- role: cell      name: 2026-08-13      ref: e1406
+- role: cell      name: 7670526579542179859      ref: e1407
+- role: cell      name: 沉淀朝夕签到时光，持之以恒便能收获丰厚馈赠 #网赚 #签到 #福利多多 #抖音商城 #剪辑制作      ref: e1408
+- role: cell      name: 7657431178504634394      ref: e1409
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1410
+- role: cell      name: 小余爱追剧      ref: e1411
+- role: cell      name: 38139081311      ref: e1412
+- role: cell      name: "https://douyin.com/video/7670526601406270754"      ref: e1413
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1414
+- role: cell      name: 865.98      ref: e1415
+- role: cell      name: 2026-08-13      ref: e1416
+- role: cell      name: 7650109710663090186      ref: e1417
+- role: cell      name: 汽水音乐听歌不花钱，还能赚点奶茶钱！ #汽水音乐 #真人 #赚金币 #zcsc #H8WZDD强      ref: e1418
+- role: cell      name: 7618884662185967679      ref: e1419
+- role: cell      name: 汽水音乐｜AD星广JY内广-真人金币04-双组件-鲸鱼      ref: e1420
+- role: cell      name: 奶盖七分糖      ref: e1421
+- role: cell      name: 82494583378      ref: e1422
+- role: cell      name: "https://douyin.com/video/7650109699567783211"      ref: e1423
+- role: cell      name: UG-汽水-星广-jy-内广-综述-次留-拉新-and-1      ref: e1424
+- role: cell      name: 831.49      ref: e1425
+- role: cell      name: 2026-08-13      ref: e1426
+- role: cell      name: 7660509756013215754      ref: e1427
+- role: cell      name: 点击视频下方链接，就能领红包 #抖音商城 #福利多多 #剪辑制作 #签到 #网赚      ref: e1428
+- role: cell      name: 7657431178504634394      ref: e1429
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1430
+- role: cell      name: 智能效率社      ref: e1431
+- role: cell      name: 42513895368      ref: e1432
+- role: cell      name: "https://douyin.com/video/7660509798789696787"      ref: e1433
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1434
+- role: cell      name: 645.76      ref: e1435
+- role: cell      name: 2026-08-13      ref: e1436
+- role: cell      name: 7670534059169726504      ref: e1437
+- role: cell      name: 红果短剧APP，海量短剧全免费！ #红果短剧 #AI #HWJLDA      ref: e1438
+- role: cell      name: 7660403527034355763      ref: e1439
+- role: cell      name: 红果-NG星广ad-短剧综述AI-02-鲸鱼      ref: e1440
+- role: cell      name: 闪耀猕果社      ref: e1441
+- role: cell      name: 93208595202      ref: e1442
+- role: cell      name: "https://douyin.com/video/7670534018856701235"      ref: e1443
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1444
+- role: cell      name: 613.84      ref: e1445
+- role: cell      name: 2026-08-13      ref: e1446
+- role: cell      name: 7657495406926135311      ref: e1447
+- role: cell      name: 礼品库存有限，先签到先得奖励 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1448
+- role: cell      name: 7641105772698173449      ref: e1449
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到02-鲸鱼      ref: e1450
+- role: cell      name: 追剧充电站      ref: e1451
+- role: cell      name: 50669015630      ref: e1452
+- role: cell      name: "https://douyin.com/video/7657495360855706880"      ref: e1453
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1454
+- role: cell      name: 535.16      ref: e1455
+- role: cell      name: 2026-08-13      ref: e1456
+- role: cell      name: 7657533192345747471      ref: e1457
+- role: cell      name: 和伙伴结伴签到，一起瓜分大奖池 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1458
+- role: cell      name: 7641104807520763955      ref: e1459
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1460
+- role: cell      name: 好剧治愈所      ref: e1461
+- role: cell      name: 78178084512      ref: e1462
+- role: cell      name: "https://douyin.com/video/7657532887784230154"      ref: e1463
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1464
+- role: cell      name: 476.84      ref: e1465
+- role: cell      name: 2026-08-13      ref: e1466
+- role: cell      name: 7670910071551918126      ref: e1467
+- role: cell      name: 每日福利更新，签到抢先拿到限时权益 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1468
+- role: cell      name: 7641104807520763955      ref: e1469
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1470
+- role: cell      name: 苏苏有话说      ref: e1471
+- role: cell      name: 91733539137      ref: e1472
+- role: cell      name: "https://douyin.com/video/7670910194758520090"      ref: e1473
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1474
+- role: cell      name: 468.33      ref: e1475
+- role: cell      name: 2026-08-13      ref: e1476
+- role: cell      name: 7670152959637700608      ref: e1477
+- role: cell      name: 点滴签到不断积攒，时光沉淀解锁专属福利 #抖音商城 #福利多多 #网赚 #签到 #剪辑制作      ref: e1478
+- role: cell      name: 7657431178504634394      ref: e1479
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1480
+- role: cell      name: 小余爱追剧      ref: e1481
+- role: cell      name: 38139081311      ref: e1482
+- role: cell      name: "https://douyin.com/video/7670152695990291750"      ref: e1483
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1484
+- role: cell      name: 399.24      ref: e1485
+- role: cell      name: 2026-08-13      ref: e1486
+- role: cell      name: 7673127592838266880      ref: e1487
+- role: cell      name: 抖音商城一键完成签到，红包福利惊喜不断 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1488
+- role: cell      name: 7641105717508456489      ref: e1489
+- role: cell      name: 新LOGO-抖音商城APP-NG-网赚04-鲸鱼      ref: e1490
+- role: cell      name: 芝士就是力量      ref: e1491
+- role: cell      name: 75128761443      ref: e1492
+- role: cell      name: "https://douyin.com/video/7673127519142366498"      ref: e1493
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1494
+- role: cell      name: 337.36      ref: e1495
+- role: cell      name: 2026-08-13      ref: e1496
+
+=== PAGE 2 SNAPSHOT ===
+### Page Snapshot CELL DATA:
+- role: cell      name: 7670530535924432939      ref: e1655
+- role: cell      name: 保持每日打卡习惯，累计时长上涨好礼持续加码 #网赚 #签到 #福利多多 #抖音商城 #剪辑制作      ref: e1656
+- role: cell      name: 7657431178504634394      ref: e1657
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1658
+- role: cell      name: 孜然哔哔机      ref: e1659
+- role: cell      name: 55428852738      ref: e1660
+- role: cell      name: "https://douyin.com/video/7670530542692994339"      ref: e1661
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1662
+- role: cell      name: 304.79      ref: e1663
+- role: cell      name: 2026-08-13      ref: e1664
+- role: cell      name: 7670170805318320179      ref: e1665
+- role: cell      name: 抖音商城天天签到，准时打卡红包领不停 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1666
+- role: cell      name: 7649580302692122630      ref: e1667
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到04-鲸鱼      ref: e1668
+- role: cell      name: 未来成长日记      ref: e1669
+- role: cell      name: 83488678381      ref: e1670
+- role: cell      name: "https://douyin.com/video/7670170950024973574"      ref: e1671
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1672
+- role: cell      name: 301.73      ref: e1673
+- role: cell      name: 2026-08-13      ref: e1674
+- role: cell      name: 7598414961561190415      ref: e1675
+- role: cell      name: 免费看短剧，就冲红果准没错 #红果短剧 #热门短剧 #jh #cj      ref: e1676
+- role: cell      name: 7566459619502080038      ref: e1677
+- role: cell      name: 红果-NG星广ad-真人综述-霍尔果斯海洋无限      ref: e1678
+- role: cell      name: 小希的拍照日常      ref: e1679
+- role: cell      name: 54448900873      ref: e1680
+- role: cell      name: "https://douyin.com/video/7598414786006682920"      ref: e1681
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1682
+- role: cell      name: 282.7      ref: e1683
+- role: cell      name: 2026-08-13      ref: e1684
+- role: cell      name: 7651823744814415924      ref: e1685
+- role: cell      name: 汽水音乐听歌变现，无需复杂操作， #汽水音乐 #赚金币 #真人 #zcsc #H8WZDD弱      ref: e1686
+- role: cell      name: 7618884450588426267      ref: e1687
+- role: cell      name: 汽水音乐｜AD星广JY内广-真人金币02-双组件-鲸鱼      ref: e1688
+- role: cell      name: 杰子不打烊（精分版）      ref: e1689
+- role: cell      name: 78437709985      ref: e1690
+- role: cell      name: "https://douyin.com/video/7651823673569070399"      ref: e1691
+- role: cell      name: UG-汽水-星广-jy-内广-综述-次留-拉新-and-1      ref: e1692
+- role: cell      name: 271.73      ref: e1693
+- role: cell      name: 2026-08-13      ref: e1694
+- role: cell      name: 7670146998571548710      ref: e1695
+- role: cell      name: 抖音商城天天打卡，签到红包福利领不停 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1696
+- role: cell      name: 7641104807520763955      ref: e1697
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1698
+- role: cell      name: NPCCCCC      ref: e1699
+- role: cell      name: 69225019744      ref: e1700
+- role: cell      name: "https://douyin.com/video/7670147074964409638"      ref: e1701
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1702
+- role: cell      name: 268.62      ref: e1703
+- role: cell      name: 2026-08-13      ref: e1704
+- role: cell      name: 7646151784817999891      ref: e1705
+- role: cell      name: 红果短剧人设鲜活立体，剧情发展扣人心弦 #红果短剧 #真人 #zcsc #H7      ref: e1706
+- role: cell      name: 7566460271952281626      ref: e1707
+- role: cell      name: 红果-NG星广ad-真人综述-04-霍尔果斯海洋无限      ref: e1708
+- role: cell      name: 超荟看剧      ref: e1709
+- role: cell      name: 84179057014      ref: e1710
+- role: cell      name: "https://douyin.com/video/7646151744115838242"      ref: e1711
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1712
+- role: cell      name: 265.14      ref: e1713
+- role: cell      name: 2026-08-13      ref: e1714
+- role: cell      name: 7665687882427777050      ref: e1715
+- role: cell      name: 入坑红果短剧，省去繁琐漫长解锁流程 #红果短剧 #免费看剧 #HWJJH      ref: e1716
+- role: cell      name: 7576848881806622726      ref: e1717
+- role: cell      name: KOL红果短剧-NG真人综述-04-鲸鱼      ref: e1718
+- role: cell      name: 会爆      ref: e1719
+- role: cell      name: 48733321382      ref: e1720
+- role: cell      name: "https://douyin.com/video/7665687754402958638"      ref: e1721
+- role: cell      name: 鲸鱼-UG星广-内广星广红果2.0-20      ref: e1722
+- role: cell      name: 253.47      ref: e1723
+- role: cell      name: 2026-08-13      ref: e1724
+- role: cell      name: 7670157497918898219      ref: e1725
+- role: cell      name: 坚持日复一日打卡，累积时长唤醒多重惊喜 #抖音商城 #福利多多 #网赚 #签到 #剪辑制作      ref: e1726
+- role: cell      name: 7657431178504634394      ref: e1727
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1728
+- role: cell      name: 效率火箭      ref: e1729
+- role: cell      name: 60057878563      ref: e1730
+- role: cell      name: "https://douyin.com/video/7670157483071147273"      ref: e1731
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1732
+- role: cell      name: 252.02      ref: e1733
+- role: cell      name: 2026-08-13      ref: e1734
+- role: cell      name: 7660493211476770854      ref: e1735
+- role: cell      name: 抖音商城红包持续派送，不错过每一份福利 #抖音商城 #福利多多 #真人实拍 #签到 #网赚      ref: e1736
+- role: cell      name: 7641105772698173449      ref: e1737
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到02-鲸鱼      ref: e1738
+- role: cell      name: 观剧放映厅      ref: e1739
+- role: cell      name: 78787255680      ref: e1740
+- role: cell      name: "https://douyin.com/video/7660493303334391050"      ref: e1741
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1742
+- role: cell      name: 242.79      ref: e1743
+- role: cell      name: 2026-08-13      ref: e1744
+- role: cell      name: 7670162447438086207      ref: e1745
+- role: cell      name: 收纳每一日签到光阴，相守越久福利持续加码 #抖音商城 #福利多多 #网赚 #签到 #剪辑制作      ref: e1746
+- role: cell      name: 7657431178504634394      ref: e1747
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1748
+- role: cell      name: 小余爱追剧      ref: e1749
+- role: cell      name: 38139081311      ref: e1750
+- role: cell      name: "https://douyin.com/video/7670162481460809011"      ref: e1751
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1752
+- role: cell      name: 241.25      ref: e1753
+- role: cell      name: 2026-08-13      ref: e1754
+- role: cell      name: 7644502217767059475      ref: e1755
+- role: cell      name: 佳作不断，看点十足 #红果短剧 #真人 #zcsc #H13      ref: e1756
+- role: cell      name: 7566460022732111881      ref: e1757
+- role: cell      name: 红果-NG星广ad-真人综述-03-霍尔果斯海洋无限      ref: e1758
+- role: cell      name: 寻剧千百遍      ref: e1759
+- role: cell      name: 90287096322      ref: e1760
+- role: cell      name: "https://douyin.com/video/7644502239960124687"      ref: e1761
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1762
+- role: cell      name: 238.32      ref: e1763
+- role: cell      name: 2026-08-13      ref: e1764
+- role: cell      name: 7627097872267198502      ref: e1765
+- role: cell      name: 刷短剧，就上红果 #红果短剧 #真人 #zcsc #LBH13      ref: e1766
+- role: cell      name: 7566459619502080038      ref: e1767
+- role: cell      name: 红果-NG星广ad-真人综述-霍尔果斯海洋无限      ref: e1768
+- role: cell      name: 外卖阿彭      ref: e1769
+- role: cell      name: 42068123484      ref: e1770
+- role: cell      name: "https://douyin.com/video/7627097976455892239"      ref: e1771
+- role: cell      name: 红果KOC-鲸鱼-站内-拉新-1      ref: e1772
+- role: cell      name: 237.15      ref: e1773
+- role: cell      name: 2026-08-13      ref: e1774
+- role: cell      name: 7670144653484818451      ref: e1775
+- role: cell      name: 逛买两不误，抖音商城签到收获红包福利 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1776
+- role: cell      name: 7649341687969464362      ref: e1777
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到03-鲸鱼      ref: e1778
+- role: cell      name: NPCCCCC      ref: e1779
+- role: cell      name: 69225019744      ref: e1780
+- role: cell      name: "https://douyin.com/video/7670144661968784640"      ref: e1781
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1782
+- role: cell      name: 230.48      ref: e1783
+- role: cell      name: 2026-08-13      ref: e1784
+- role: cell      name: 7650464089319997490      ref: e1785
+- role: cell      name: 全天候播放，收益不间断 #汽水音乐 #赚金币 #真人 #zcscQT #H7WZDD强      ref: e1786
+- role: cell      name: 7618884450588426267      ref: e1787
+- role: cell      name: 汽水音乐｜AD星广JY内广-真人金币02-双组件-鲸鱼      ref: e1788
+- role: cell      name: 芝麻糊呀      ref: e1789
+- role: cell      name: yx1103235587      ref: e1790
+- role: cell      name: "https://douyin.com/video/7650464117437828392"      ref: e1791
+- role: cell      name: UG-汽水-星广-jy-内广-综述-次留-拉新-and-1      ref: e1792
+- role: cell      name: 218.93      ref: e1793
+- role: cell      name: 2026-08-13      ref: e1794
+- role: cell      name: 7660463683773268014      ref: e1795
+- role: cell      name: 抖音商城签到领红包，签到攒钱买好物 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1796
+- role: cell      name: 7641105772698173449      ref: e1797
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到02-鲸鱼      ref: e1798
+- role: cell      name: NPCCCCC      ref: e1799
+- role: cell      name: 69225019744      ref: e1800
+- role: cell      name: "https://douyin.com/video/7660463716382657818"      ref: e1801
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1802
+- role: cell      name: 211.47      ref: e1803
+- role: cell      name: 2026-08-13      ref: e1804
+- role: cell      name: 7670139373669564466      ref: e1805
+- role: cell      name: 每日打卡不中断，抖音商城红包领不停 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1806
+- role: cell      name: 7641104807520763955      ref: e1807
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1808
+- role: cell      name: 未来成长日记      ref: e1809
+- role: cell      name: 83488678381      ref: e1810
+- role: cell      name: "https://douyin.com/video/7670140972478549294"      ref: e1811
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1812
+- role: cell      name: 199.32      ref: e1813
+- role: cell      name: 2026-08-13      ref: e1814
+- role: cell      name: 7657895788789694470      ref: e1815
+- role: cell      name: 好物尽在抖音商城，一分钱起实惠带回家 #电商 #1分购 #真人实拍 #福利多多 #抖音商城      ref: e1816
+- role: cell      name: 7641106159684419627      ref: e1817
+- role: cell      name: 新LOGO-抖音商城APP-NG-达人1分购实拍01-鲸鱼      ref: e1818
+- role: cell      name: 超能工具箱      ref: e1819
+- role: cell      name: 93422110848      ref: e1820
+- role: cell      name: "https://douyin.com/video/7657895799103294762"      ref: e1821
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1822
+- role: cell      name: 198.38      ref: e1823
+- role: cell      name: 2026-08-13      ref: e1824
+- role: cell      name: 7670527411691995170      ref: e1825
+- role: cell      name: 用心打卡度过日常，签到天数越多专属惊喜越丰厚 #网赚 #签到 #福利多多 #抖音商城 #剪辑制作      ref: e1826
+- role: cell      name: 7657431178504634394      ref: e1827
+- role: cell      name: 新LOGO-抖音商城APP-NG-AI签到01-鲸鱼      ref: e1828
+- role: cell      name: 小余爱追剧      ref: e1829
+- role: cell      name: 38139081311      ref: e1830
+- role: cell      name: "https://douyin.com/video/7670527375322516771"      ref: e1831
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1832
+- role: cell      name: 197.78      ref: e1833
+- role: cell      name: 2026-08-13      ref: e1834
+- role: cell      name: 7669781508933140518      ref: e1835
+- role: cell      name: 打开抖音商城签到，超多购物红包随机发放 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1836
+- role: cell      name: 7641105772698173449      ref: e1837
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到02-鲸鱼      ref: e1838
+- role: cell      name: 学霸的隐藏武器      ref: e1839
+- role: cell      name: 30285693363      ref: e1840
+- role: cell      name: "https://douyin.com/video/7669781542843059482"      ref: e1841
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1842
+- role: cell      name: 191.04      ref: e1843
+- role: cell      name: 2026-08-13      ref: e1844
+- role: cell      name: 7670910902761898018      ref: e1845
+- role: cell      name: 长期养成签到习惯，省钱技巧轻松拿捏 #网赚 #签到 #真人实拍 #福利多多 #抖音商城      ref: e1846
+- role: cell      name: 7641104807520763955      ref: e1847
+- role: cell      name: 新LOGO-抖音商城APP-NG-签到01-鲸鱼      ref: e1848
+- role: cell      name: 苏苏说说看      ref: e1849
+- role: cell      name: 97720499428      ref: e1850
+- role: cell      name: "https://douyin.com/video/7670910870402190646"      ref: e1851
+- role: cell      name: 抖音商城版-端拉新-星广联投-占位-内广-欧阳朔-霍尔果斯-1      ref: e1852
+- role: cell      name: 182.25      ref: e1853
+- role: cell      name: 2026-08-13      ref: e1854

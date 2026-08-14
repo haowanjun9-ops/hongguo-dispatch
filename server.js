@@ -12,6 +12,7 @@ const DEFAULT_TYPES = [
 ];
 const TYPE_COLORS = ['#15a34a', '#2563eb', '#7c3aed', '#dc2626', '#0891b2', '#ea580c', '#4f46e5', '#db2777', '#65a30d', '#9333ea'];
 const STORE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
+const VERIFY_STORE = path.join(process.env.DATA_DIR || __dirname, 'verify-data.json');
 const PASSCODE = process.env.PASSCODE || '';        // 普通用户密码（只读 + 派单）
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || PASSCODE; // 管理员密码；未单独设置时退化为等于 PASSCODE
 
@@ -29,6 +30,59 @@ const SEED = {
     tasks: ["7566459273833037878","7565814540873711643","7661894113079836698","7661893595297562643"]
   }
 };
+
+// 素材校验平台：默认匹配规则（基于用户需求）
+const VERIFY_SEED_RULES = [
+  { id: 'r-' + Date.now().toString(36) + '1', keyword: '网赚', requiredTags: ['#网赚'], priority: 10 },
+  { id: 'r-' + Date.now().toString(36) + '2', keyword: '签到', requiredTags: ['#签到'], priority: 10 },
+  { id: 'r-' + Date.now().toString(36) + '3', keyword: 'AI签到', requiredTags: ['#签到'], priority: 15 },
+  { id: 'r-' + Date.now().toString(36) + '4', keyword: '达人签到', requiredTags: ['#网赚', '#签到'], priority: 20 },
+  { id: 'r-' + Date.now().toString(36) + '5', keyword: '秒杀-退货券', requiredTags: ['#电商', '#秒杀退货券'], priority: 20 },
+  { id: 'r-' + Date.now().toString(36) + '6', keyword: '1分购8元券-退货券', requiredTags: ['#电商', '#1分购退货券'], priority: 20 },
+  { id: 'r-' + Date.now().toString(36) + '7', keyword: '8元券退货券', requiredTags: ['#8元券退货券'], priority: 15 }
+];
+
+let verifyState;
+function seedVerifyState() {
+  return { rules: VERIFY_SEED_RULES.map(r => ({ ...r })), records: [], lastUpdated: Date.now() };
+}
+function loadVerifyState() {
+  try { verifyState = JSON.parse(fs.readFileSync(VERIFY_STORE, 'utf8')); }
+  catch (e) { verifyState = seedVerifyState(); saveVerifyState(); }
+  if (!verifyState.rules) verifyState.rules = [];
+  if (!verifyState.records) verifyState.records = [];
+}
+function saveVerifyState() { verifyState.lastUpdated = Date.now(); try { fs.writeFileSync(VERIFY_STORE, JSON.stringify(verifyState, null, 2)); } catch (e) {} }
+
+// 校验一条记录：根据任务名匹配规则，检查素材名是否包含所有必需标签
+function verifyRecord(taskName, materialName) {
+  const tn = (taskName || '').trim();
+  const mn = (materialName || '').trim();
+  // 1. 找匹配的规则：任务名包含 keyword，取优先级最高的
+  const matched = verifyState.rules
+    .filter(r => r.keyword && tn.includes(r.keyword))
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  const rule = matched[0];
+  if (!rule) {
+    return { status: 'warn', ruleId: null, ruleKeyword: null, requiredTags: [], missingTags: [], actualTags: extractTags(mn) };
+  }
+  const required = rule.requiredTags || [];
+  const actual = extractTags(mn);
+  const missing = required.filter(t => !actual.some(a => a.toLowerCase() === t.toLowerCase()));
+  return {
+    status: missing.length ? 'fail' : 'pass',
+    ruleId: rule.id,
+    ruleKeyword: rule.keyword,
+    requiredTags: required,
+    missingTags: missing,
+    actualTags: actual
+  };
+}
+function extractTags(text) {
+  const re = /#[^\s#]+/g;
+  const matches = (text || '').match(re);
+  return matches ? [...new Set(matches)] : [];
+}
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function todayStr() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
@@ -166,7 +220,82 @@ const server = http.createServer(async (req, res) => {
     res.end(fs.readFileSync(path.join(__dirname, 'public', 'index.html')));
     return;
   }
+  if (req.method === 'GET' && (url === '/verify' || url === '/verify.html')) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(fs.readFileSync(path.join(__dirname, 'public', 'verify.html')));
+    return;
+  }
   if (req.method === 'GET' && url === '/api/state') { send(res, 200, publicState()); return; }
+
+  // ============ 素材校验平台 API ============
+  if (req.method === 'GET' && url === '/api/verify/state') {
+    return send(res, 200, { rules: verifyState.rules, records: verifyState.records, lastUpdated: verifyState.lastUpdated });
+  }
+  if (req.method === 'GET' && url === '/api/verify/rules') {
+    return send(res, 200, { rules: verifyState.rules });
+  }
+  if (req.method === 'POST' && url === '/api/verify/rule') {
+    const body = await readBody(req);
+    const keyword = (body.keyword || '').trim();
+    const requiredTags = Array.isArray(body.requiredTags) ? body.requiredTags.map(t => (t || '').trim()).filter(Boolean) : [];
+    const priority = parseInt(body.priority, 10) || 10;
+    if (!keyword) return send(res, 400, { error: '关键词不能为空' });
+    if (!requiredTags.length) return send(res, 400, { error: '至少需要一个必需标签' });
+    const id = body.id || ('r-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+    // 如果是更新
+    const existingIdx = verifyState.rules.findIndex(r => r.id === id);
+    if (existingIdx >= 0) {
+      verifyState.rules[existingIdx] = { ...verifyState.rules[existingIdx], keyword, requiredTags, priority };
+    } else {
+      if (verifyState.rules.some(r => r.keyword === keyword)) return send(res, 400, { error: '该关键词的规则已存在' });
+      verifyState.rules.push({ id, keyword, requiredTags, priority });
+    }
+    saveVerifyState();
+    return send(res, 200, { ok: true, rule: verifyState.rules.find(r => r.id === id) });
+  }
+  if (req.method === 'DELETE' && url.startsWith('/api/verify/rule/')) {
+    const id = url.split('/').pop();
+    const before = verifyState.rules.length;
+    verifyState.rules = verifyState.rules.filter(r => r.id !== id);
+    if (verifyState.rules.length === before) return send(res, 404, { error: '规则不存在' });
+    saveVerifyState();
+    return send(res, 200, { ok: true });
+  }
+  if (req.method === 'POST' && url === '/api/verify/import') {
+    const body = await readBody(req);
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    const results = [];
+    let pass = 0, fail = 0, warn = 0;
+    for (const row of rows) {
+      const v = verifyRecord(row.taskName, row.materialName);
+      if (v.status === 'pass') pass++;
+      else if (v.status === 'fail') fail++;
+      else warn++;
+      results.push({
+        id: 'rec-' + uid(),
+        rowNo: row.rowNo,
+        taskName: row.taskName || '',
+        taskId: row.taskId || '',
+        materialId: row.materialId || '',
+        materialName: row.materialName || '',
+        url: row.url || '',
+        ...v
+      });
+    }
+    verifyState.records = results;
+    saveVerifyState();
+    return send(res, 200, { ok: true, total: results.length, pass, fail, warn, records: results });
+  }
+  if (req.method === 'POST' && url === '/api/verify/verify') {
+    const body = await readBody(req);
+    const v = verifyRecord(body.taskName, body.materialName);
+    return send(res, 200, v);
+  }
+  if (req.method === 'DELETE' && url === '/api/verify/records') {
+    verifyState.records = [];
+    saveVerifyState();
+    return send(res, 200, { ok: true });
+  }
 
   if (req.method === 'GET' && url === '/api/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
@@ -367,6 +496,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 loadState();
+loadVerifyState();
 setInterval(ensureFresh, 60000); // 每分钟检查跨天
 server.listen(PORT, () => {
   console.log('红果素材分发平台已启动');

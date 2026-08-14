@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>素材校验平台</title>
+<style>
+:root{
+  --bg:#f4f6fb; --panel:#fff; --text:#1f2933; --muted:#7b8494;
+  --border:#e6e9f0; --green:#15a34a; --green-bg:#e7f8ee; --blue:#2563eb; --blue-bg:#e8efff;
+  --purple:#7c3aed; --purple-bg:#f1ebfe; --red:#dc2626; --red-bg:#fee2e2;
+  --amber:#d97706; --amber-bg:#fef3c7; --shadow:0 1px 3px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:18px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1400px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+header h1{font-size:21px;font-weight:800;display:flex;align-items:center;gap:8px}
+header .nav{display:flex;gap:8px;align-items:center}
+header .nav a{padding:7px 14px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;color:var(--muted);border:1px solid var(--border);background:#fff}
+header .nav a.on{background:var(--text);color:#fff;border-color:var(--text)}
+
+/* 统计卡片 */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.card .t{font-weight:800;font-size:14px;color:var(--muted)}
+.card .n{font-size:30px;font-weight:800;margin-top:6px}
+.card .n small{font-size:13px;color:var(--muted);font-weight:600}
+.card .s{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;margin:6px 0 14px}
+.tab{padding:10px 18px;border:1px solid var(--border);border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;color:var(--muted);background:#fff;box-shadow:var(--shadow)}
+.tab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tab .c{opacity:.7;font-weight:600;margin-left:4px}
+
+/* 面板通用 */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.panel h2{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel h2 .hint{font-size:12px;font-weight:500;color:var(--muted)}
+
+/* 导入区 */
+.import-area{border:2px dashed var(--border);border-radius:12px;padding:14px;background:#fafbfd;transition:.2s}
+.import-area.drag{border-color:var(--blue);background:var(--blue-bg)}
+.import-area textarea{width:100%;min-height:140px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;background:#fff}
+.import-tip{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7}
+.import-tip b{color:var(--text)}
+.import-actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.btn{border:none;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.primary:hover{background:#1d4ed8}
+.btn.secondary{background:#fff;color:var(--text);border:1px solid var(--border)}
+.btn.secondary:hover{background:#f8fafc}
+.btn.danger{background:#fff;color:var(--red);border:1px solid #fca5a5}
+.btn.danger:hover{background:var(--red-bg)}
+.btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* 列映射 */
+.col-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px;padding:12px;background:var(--bg);border-radius:10px}
+.col-map label{font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.col-map select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:#fff}
+.preview-count{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.preview-count b{color:var(--blue);font-size:14px}
+
+/* 过滤筛选 */
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.filter-chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted)}
+.filter-chip.on{background:var(--text);color:#fff;border-color:var(--text)}
+.filter-chip.fail.on{background:var(--red);border-color:var(--red)}
+.filter-chip.warn.on{background:var(--amber);border-color:var(--amber)}
+.filter-chip.pass.on{background:var(--green);border-color:var(--green)}
+.search-box{margin-left:auto;position:relative}
+.search-box input{padding:7px 12px 7px 30px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;width:240px;background:#fff}
+.search-box::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5}
+
+/* 结果表格 */
+.table-wrap{max-height:560px;overflow:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1200px}
+th{position:sticky;top:0;z-index:2;background:#f8fafc;text-align:left;padding:10px 12px;font-weight:700;color:var(--muted);font-size:12px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:#fafbfd}
+tr.row-fail td{background:var(--red-bg)}
+tr.row-fail:hover td{background:#fde5e5}
+tr.row-warn td{background:var(--amber-bg)}
+tr.row-warn:hover td{background:#fde9c4}
+.row-no{font-weight:800;color:var(--muted);font-size:12px;width:50px;text-align:center}
+.status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap}
+.status.pass{background:var(--green-bg);color:var(--green)}
+.status.fail{background:var(--red-bg);color:var(--red)}
+.status.warn{background:var(--amber-bg);color:var(--amber)}
+.cell-task{font-weight:600;color:var(--text);max-width:280px;word-break:break-all}
+.cell-material{max-width:340px;word-break:break-all}
+.cell-id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);max-width:170px;word-break:break-all}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;margin:1px 2px;background:#eef2ff;color:#3730a3;white-space:nowrap}
+.tag.missing{background:var(--red-bg);color:var(--red);outline:1px solid #fca5a5;outline-offset:-1px;text-decoration:line-through}
+.tag.found{background:var(--green-bg);color:var(--green)}
+.tag.extra{background:#f1ebfe;color:var(--purple)}
+.rule-match{font-size:11px;color:var(--muted);margin-top:4px}
+.rule-match b{color:var(--blue)}
+.cell-link a{color:var(--blue);font-size:12px;text-decoration:none}
+.cell-link a:hover{text-decoration:underline}
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
+
+/* 规则管理 */
+.rule-list{display:flex;flex-direction:column;gap:10px}
+.rule-item{background:#fafbfd;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rule-item .kw{font-weight:800;font-size:14px;color:var(--text);background:var(--blue-bg);padding:4px 10px;border-radius:8px;min-width:120px}
+.rule-item .tags{flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.rule-item .tags .tag{padding:3px 9px;font-size:12px}
+.rule-item .pri{font-size:12px;color:var(--muted);background:#fff;padding:3px 8px;border-radius:6px;border:1px solid var(--border)}
+.rule-item .pri b{color:var(--purple);font-weight:800}
+.rule-item .acts{display:flex;gap:6px}
+
+/* 弹窗 */
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;align-items:center;justify-content:center}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:440px;max-width:92vw;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.modal h3{font-size:16px;margin-bottom:14px;font-weight:800}
+.fg{margin-bottom:12px}
+.fg label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px}
+.fg input,.fg textarea,.fg select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;outline:none;font-family:inherit}
+.fg .help{font-size:11px;color:var(--muted);margin-top:4px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions button{flex:1;padding:9px;border-radius:9px;font-weight:700;cursor:pointer;border:none}
+.modal-actions .cancel{background:#f1f5f9;color:var(--text)}
+.modal-actions .ok{background:var(--blue);color:#fff}
+
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1f2933;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:99}
+.toast.show{opacity:1}
+
+@media(max-width:880px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .search-box{margin-left:0;width:100%}
+  .search-box input{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>✅ 素材校验平台</h1>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">校验任务名称与素材名称标签是否匹配 · 出错自动标记</div>
+    </div>
+    <div class="nav">
+      <a href="/verify.html" class="on">素材校验</a>
+      <a href="/index.html">素材分发</a>
+    </div>
+  </header>
+
+  <!-- 统计卡片 -->
+  <div class="cards" id="stats">
+    <div class="card"><span class="bar" style="background:#64748b"></span><div class="t">总记录</div><div class="n" id="stTotal">0</div><div class="s">已导入的数据条数</div></div>
+    <div class="card"><span class="bar" style="background:var(--green)"></span><div class="t" style="color:var(--green)">✅ 通过</div><div class="n" id="stPass" style="color:var(--green)">0</div><div class="s">标签完全匹配</div></div>
+    <div class="card"><span class="bar" style="background:var(--red)"></span><div class="t" style="color:var(--red)">❌ 失败</div><div class="n" id="stFail" style="color:var(--red)">0</div><div class="s">缺少必需标签</div></div>
+    <div class="card"><span class="bar" style="background:var(--amber)"></span><div class="t" style="color:var(--amber)">⚠️ 警告</div><div class="n" id="stWarn" style="color:var(--amber)">0</div><div class="s">无匹配规则的任务</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab on" data-t="data">📋 数据校验 <span class="c" id="cData">0</span></div>
+    <div class="tab" data-t="rules">⚙️ 匹配规则 <span class="c" id="cRules">0</span></div>
+  </div>
+
+  <!-- ============ 数据校验 Tab ============ -->
+  <div id="tabData">
+    <!-- 导入区 -->
+    <div class="panel">
+      <h2>📥 导入数据 <span class="hint">从飞书/Excel 复制 A~F 列（序号、任务名称、任务ID、素材ID、素材名称、链接）粘贴到下方</span></h2>
+      <div class="import-area" id="dropArea">
+        <textarea id="pasteArea" placeholder="示例（从表格复制后直接粘贴，制表符或逗号分隔）：
+121	新LOGO-抖音商城APP-NG-1分购8元券-退货券	7668655842887024650	7673515717337137206	抖音商城新人福利 退货免运费啦 #电商 #8元券退货券 #抖音商城	https://...
+122	新LOGO-抖音商城APP-NG-达人签到01	7668655842887024650	7673514987092754438	网购不想出运费的看过来 #网赚 #签到 #AI	https://..."></textarea>
+        <div class="import-tip">
+          <b>📋 粘贴格式说明：</b>每行一条记录，各列按顺序用 Tab 或逗号分隔。<br>
+          <b>默认列顺序：</b>行号 | 任务名称 | 任务ID | 素材ID | 素材名称 | 链接<br>
+          如果你的表格列顺序不同，可以在下方「列映射」调整对应关系。
+        </div>
+        <div class="col-map" id="colMap" style="display:none"></div>
+        <div class="import-actions">
+          <button class="btn primary" id="btnParse">🔍 解析并校验</button>
+          <button class="btn secondary" id="btnSample">📝 填入示例数据</button>
+          <button class="btn secondary" id="btnClearPaste">🗑 清空</button>
+          <div class="preview-count" id="previewCount"></div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn secondary sm" id="btnExport">📤 导出结果</button>
+            <button class="btn danger sm" id="btnClearRecords">🗑 清空结果</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 筛选 -->
+    <div class="filters" id="filters" style="display:none">
+      <div class="filter-chip on" data-f="all">全部 <b id="fAll">0</b></div>
+      <div class="filter-chip fail" data-f="fail">❌ 失败 <b id="fFail">0</b></div>
+      <div class="filter-chip warn" data-f="warn">⚠️ 警告 <b id="fWarn">0</b></div>
+      <div class="filter-chip pass" data-f="pass">✅ 通过 <b id="fPass">0</b></div>
+      <div class="search-box"><input id="searchInput" type="text" placeholder="搜索任务名/素材名/缺失标签"></div>
+    </div>
+
+    <!-- 结果表格 -->
+    <div class="panel" id="resultPanel" style="display:none">
+      <h2>📊 校验结果</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:50px">行号</th>
+              <th style="width:70px">状态</th>
+              <th>任务名称</th>
+              <th>素材名称 & 标签分析</th>
+              <th style="width:140px">匹配规则</th>
+              <th style="width:170px">任务ID / 素材ID</th>
+              <th style="width:70px">链接</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 规则管理 Tab ============ -->
+  <div id="tabRules" style="display:none">
+    <div class="panel">
+      <h2>⚙️ 匹配规则管理 <span class="hint">任务名包含「关键词」时，素材名必须包含所有「必需标签」。多个关键词同时匹配时取优先级最高的规则。</span></h2>
+      <div style="margin-bottom:14px">
+        <button class="btn primary" id="btnAddRule">➕ 新增规则</button>
+        <button class="btn secondary" id="btnResetRules">↺ 重置为默认规则</button>
+      </div>
+      <div class="rule-list" id="ruleList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 新增/编辑规则弹窗 -->
+<div class="modal-mask" id="ruleModal">
+  <div class="modal">
+    <h3 id="rmTitle">新增匹配规则</h3>
+    <div class="fg">
+      <label>任务关键词（任务名中包含此文本即触发）</label>
+      <input id="rmKeyword" type="text" placeholder="如：达人签到、秒杀-退货券、网赚">
+      <div class="help">任务名称中包含该关键词即会使用此规则校验</div>
+    </div>
+    <div class="fg">
+      <label>必需标签（素材名必须包含全部这些标签）</label>
+      <input id="rmTags" type="text" placeholder="如：#网赚 #签到 或 #电商 #秒杀退货券">
+      <div class="help">用空格分隔多个标签，必须以 # 开头</div>
+    </div>
+    <div class="fg">
+      <label>优先级（数字越大越优先，解决多个关键词同时匹配的冲突）</label>
+      <input id="rmPriority" type="number" value="10" min="1" max="999">
+      <div class="help">例如：「达人签到」(优先级20) 比 「签到」(优先级10) 优先匹配</div>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" id="rmCancel">取消</button>
+      <button class="ok" id="rmOk">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 全局状态 ================= */
+let RULES = [];
+let RECORDS = [];
+let FILTER = 'all';
+let editingRuleId = null;
+
+/* ================= 工具函数 ================= */
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function esc(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ================= 初始加载 ================= */
+async function loadState(){
+  try{
+    const d = await fetch('/api/verify/state').then(r=>r.json());
+    RULES = d.rules || [];
+    RECORDS = d.records || [];
+    refreshRulesCount();
+    renderRules();
+    if(RECORDS.length){ renderResults(true); }
+  }catch(e){ toast('加载失败'); }
+}
+
+/* ================= Tabs 切换 ================= */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    tab.classList.add('on');
+    const show = tab.dataset.t;
+    document.getElementById('tabData').style.display = show==='data'?'':'none';
+    document.getElementById('tabRules').style.display = show==='rules'?'':'none';
+  };
+});
+
+/* ================= 列解析（自动/手动映射） ================= */
+const COL_OPTIONS = [
+  { v:'skip', l:'-- 跳过此列 --' },
+  { v:'rowNo', l:'行号' },
+  { v:'taskName', l:'任务名称' },
+  { v:'taskId', l:'任务ID' },
+  { v:'materialId', l:'素材ID' },
+  { v:'materialName', l:'素材名称' },
+  { v:'url', l:'链接/URL' }
+];
+let parsedRawRows = [];
+let colMapping = ['skip','taskName','taskId','materialId','materialName','url']; // 默认映射（如果没粘贴第一列行号，用这个）
+
+function detectDelimiter(line){
+  // 统计 Tab 数和逗号数
+  const tabs = (line.match(/\t/g)||[]).length;
+  const commas = (line.match(/[,，]/g)||[]).length;
+  if(tabs >= commas) return /\t/;
+  return /[,，]\s*/;
+}
+
+function parsePastedText(text){
+  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(!lines.length) return [];
+  const delim = detectDelimiter(lines[0]);
+  return lines.map(line=>line.split(delim).map(s=>s.trim()));
+}
+
+function renderColMap(rows){
+  const box = document.getElementById('colMap');
+  if(!rows.length){ box.style.display='none'; return; }
+  const colCount = Math.max(...rows.map(r=>r.length));
+  // 智能猜测列：如果第1行第1列是纯数字，认为是行号列
+  const firstCell = rows[0][0]||'';
+  const looksLikeRowNo = /^\d+$/.test(firstCell);
+  if(looksLikeRowNo){
+    colMapping = ['rowNo','taskName','taskId','materialId','materialName','url'].slice(0,Math.max(6,colCount));
+  }else{
+    colMapping = ['taskName','taskId','materialId','materialName','url'].slice(0,Math.max(5,colCount));
+  }
+  while(colMapping.length < colCount) colMapping.push('skip');
+  box.style.display = 'grid';
+  box.innerHTML = Array.from({length:colCount},(_,i)=>{
+    const sample = rows.slice(0,3).map(r=>esc((r[i]||'').slice(0,18))).filter(Boolean).join(' / ');
+    return `<label>第 ${i+1} 列 <span style="font-weight:500;color:#94a3b8">（例：${sample||'空'}）</span>
+      <select data-i="${i}" class="colSel">
+        ${COL_OPTIONS.map(o=>`<option value="${o.v}" ${colMapping[i]===o.v?'selected':''}>${o.l}</option>`).join('')}
+      </select></label>`;
+  }).join('');
+  document.querySelectorAll('.colSel').forEach(sel=>{
+    sel.onchange=()=>{ colMapping[parseInt(sel.dataset.i)] = sel.value; updatePreviewCount(); };
+  });
+  updatePreviewCount();
+}
+function updatePreviewCount(){
+  if(!parsedRawRows.length){ document.getElementById('previewCount').innerHTML=''; return; }
+  const valid = parsedRawRows.filter(row=>{
+    const m = mappedRow(row);
+    return m.taskName || m.materialName;
+  }).length;
+  document.getElementById('previewCount').innerHTML = `已识别 <b>${parsedRawRows.length}</b> 行，其中 <b style="color:var(--green)">${valid}</b> 行有效`;
+}
+function mappedRow(rawRow){
+  const m = {};
+  rawRow.forEach((v,i)=>{ if(colMapping[i] && colMapping[i]!=='skip') m[colMapping[i]] = v; });
+  return m;
+}
+
+/* ================= 粘贴/导入区交互 ================= */
+const pasteArea = document.getElementById('pasteArea');
+pasteArea.addEventListener('input', ()=>{
+  parsedRawRows = parsePastedText(pasteArea.value);
+  renderColMap(parsedRawRows);
+});
+
+// 拖放支持
+const dropArea = document.getElementById('dropArea');
+['dragover','dragenter'].forEach(ev=>dropArea.addEventListener(ev,e=>{e.preventDefault();dropArea.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropArea.addEventListener(ev,e=>{e.preventDefault();dropArea.classList.remove('drag');}));
+dropArea.addEventListener('drop',e=>{
+  const f = e.dataTransfer.files?.[0];
+  if(f){ const r=new FileReader(); r.onload=ev=>{pasteArea.value=ev.target.result;pasteArea.dispatchEvent(new Event('input'));}; r.readAsText(f); }
+});
+
+// 示例数据
+document.getElementById('btnSample').onclick=()=>{
+  pasteArea.value = `121\t新LOGO-抖音商城APP-NG-1分购8元券-退货券\t7668655842887024650\t7673515717337137206\t抖音商城新人福利 退货免运费啦 #电商 #8元券退货券 #抖音商城 #福利多多 #AI\thttps://example.com/1
+122\t新LOGO-抖音商城APP-NG-1分购8元券-退货券\t7668655842887024650\t7673514987092754438\t网购不想出运费的看过来 抖音商城送退货包邮券 #电商 #8元券退货券 #抖音商城 #福利多多 #AI\thttps://example.com/2
+123\t新LOGO-抖音商城APP-NG-1分购8元券-退货券\t7668655842887024650\t7673514288695050255\t抖音商城新人福利 最高8元无门槛券 #电商 #抖音商城 #福利多多 #AI\thttps://example.com/3
+176\t新LOGO-抖音商城APP-NG-网赚04-鲸鱼\t7668655842887024651\t7673478267982331939\t好物不合心意放心退，抖音商城能够免费领取退货券 #网赚 #福利多多\thttps://example.com/4
+177\t新LOGO-抖音商城APP-NG-签到02-鲸鱼\t7668655842887024652\t7673477451691343891\t别再自费退货啦！抖音商城免费领取退货券，省心省钱 #电商\thttps://example.com/5
+178\t新LOGO-抖音商城APP-NG-达人签到01\t7668655842887024653\t7673476790930145323\t抖音商城福利来袭，免费领取退货券，网购退换不心疼 #签到 #抖音商城\thttps://example.com/6
+179\t新LOGO-抖音商城APP-NG-秒杀-退货券-鲸鱼\t7668655842887024654\t767347615314763812\t网购担心退货花运费？抖音商城可免费领取退货券 #电商 #秒杀退货券 #福利多多\thttps://example.com/7
+180\t新LOGO-抖音商城APP-NG-未知类型-鲸鱼\t7668655842887024655\t767347615314763999\t未知任务类型测试文案 #未知标签\thttps://example.com/8`;
+  pasteArea.dispatchEvent(new Event('input'));
+  toast('已填入示例数据，点击「解析并校验」查看效果');
+};
+
+document.getElementById('btnClearPaste').onclick=()=>{ pasteArea.value=''; parsedRawRows=[]; renderColMap([]); };
+
+// 解析并校验
+document.getElementById('btnParse').onclick=async()=>{
+  if(!parsedRawRows.length){ parsedRawRows = parsePastedText(pasteArea.value); }
+  if(!parsedRawRows.length){ toast('请先粘贴或输入数据'); return; }
+  const rows = parsedRawRows.map((raw,i)=>{
+    const m = mappedRow(raw);
+    return { rowNo: m.rowNo || (i+1), taskName: m.taskName||'', taskId: m.taskId||'', materialId: m.materialId||'', materialName: m.materialName||'', url: m.url||'' };
+  });
+  const r = await fetch('/api/verify/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).then(x=>x.json());
+  if(!r.ok){ toast(r.error||'校验失败'); return; }
+  RECORDS = r.records;
+  renderResults(false);
+  toast(`校验完成：通过 ${r.pass} · 失败 ${r.fail} · 警告 ${r.warn}`);
+};
+
+document.getElementById('btnClearRecords').onclick=async()=>{
+  if(!RECORDS.length) return;
+  if(!confirm('确定清空所有校验结果？')) return;
+  await fetch('/api/verify/records',{method:'DELETE'});
+  RECORDS = []; renderResults(false); toast('已清空结果');
+};
+
+/* ================= 结果渲染 ================= */
+function statusLabel(s){return s==='pass'?'✅ 通过':s==='fail'?'❌ 失败':'⚠️ 无规则';}
+
+function renderResults(keepFilter){
+  // 统计
+  const total = RECORDS.length;
+  const pass = RECORDS.filter(r=>r.status==='pass').length;
+  const fail = RECORDS.filter(r=>r.status==='fail').length;
+  const warn = RECORDS.filter(r=>r.status==='warn').length;
+  document.getElementById('stTotal').textContent = total;
+  document.getElementById('stPass').textContent = pass;
+  document.getElementById('stFail').textContent = fail;
+  document.getElementById('stWarn').textContent = warn;
+  document.getElementById('cData').textContent = total ? total : '';
+  document.getElementById('fAll').textContent = total;
+  document.getElementById('fFail').textContent = fail;
+  document.getElementById('fWarn').textContent = warn;
+  document.getElementById('fPass').textContent = pass;
+
+  if(!total){
+    document.getElementById('filters').style.display='none';
+    document.getElementById('resultPanel').style.display='none';
+    return;
+  }
+  document.getElementById('filters').style.display='flex';
+  document.getElementById('resultPanel').style.display='';
+  if(!keepFilter) FILTER='all';
+  document.querySelectorAll('.filter-chip').forEach(c=>{
+    c.classList.toggle('on', FILTER===c.dataset.f || (!keepFilter && c.dataset.f==='all'));
+  });
+  applyFilter();
+}
+
+/* 筛选与搜索 */
+function applyFilter(){
+  const kw=(document.getElementById('searchInput').value||'').trim().toLowerCase();
+  const list = RECORDS.filter(r=>{
+    if(FILTER!=='all' && r.status!==FILTER) return false;
+    if(!kw) return true;
+    const hay = [r.taskName, r.materialName, r.missingTags?.join(' '), r.ruleKeyword, r.taskId, r.materialId].join(' ').toLowerCase();
+    return hay.includes(kw);
+  });
+  const body = document.getElementById('resultBody');
+  if(!list.length){ body.innerHTML = `<tr><td colspan="7" class="empty">无匹配的记录</td></tr>`; return; }
+  body.innerHTML = list.map(r=>{
+    const required = r.requiredTags||[];
+    const missing = r.missingTags||[];
+    const actual = r.actualTags||[];
+    const tagsHtml = required.length ? required.map(t=>{
+      const isMissing = missing.some(m=>m.toLowerCase()===t.toLowerCase());
+      return `<span class="tag ${isMissing?'missing':'found'}">${esc(t)}</span>`;
+    }).join('') : '';
+    const extraHtml = actual.filter(t=>!required.some(rq=>rq.toLowerCase()===t.toLowerCase())).map(t=>`<span class="tag extra">${esc(t)}</span>`).join('');
+    const ruleHtml = r.ruleKeyword ? `<div class="rule-match">命中关键词：<b>${esc(r.ruleKeyword)}</b></div>` : `<div class="rule-match" style="color:var(--amber)">⚠️ 未匹配任何规则，建议新增规则</div>`;
+    return `<tr class="row-${r.status}">
+      <td class="row-no">${esc(String(r.rowNo||''))}</td>
+      <td><span class="status ${r.status}">${statusLabel(r.status)}</span></td>
+      <td class="cell-task">${esc(r.taskName)}</td>
+      <td class="cell-material">
+        <div>${esc(r.materialName)}</div>
+        <div style="margin-top:6px;padding:8px;background:rgba(255,255,255,.55);border-radius:8px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">必需标签校验：</div>
+          ${tagsHtml || '<span style="font-size:12px;color:var(--muted)">（无要求）</span>'}
+          ${extraHtml ? `<div style="font-size:11px;color:var(--muted);margin:6px 0 3px;font-weight:700">素材中其他标签：</div>` + extraHtml : ''}
+          ${missing.length ? `<div style="margin-top:6px;color:var(--red);font-size:12px;font-weight:700">❌ 缺少 ${missing.length} 个必需标签：${missing.map(esc).join('、')}</div>` : ''}
+        </div>
+      </td>
+      <td>${ruleHtml}</td>
+      <td class="cell-id">
+        <div title="${esc(r.taskId)}">任务ID: ${esc((r.taskId||'').slice(0,12))}${r.taskId&&r.taskId.length>12?'…':''}</div>
+        <div style="margin-top:4px" title="${esc(r.materialId)}">素材ID: ${esc((r.materialId||'').slice(0,12))}${r.materialId&&r.materialId.length>12?'…':''}</div>
+      </td>
+      <td class="cell-link">${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener">打开</a>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('.filter-chip').forEach(c=>{
+  c.onclick=()=>{ FILTER=c.dataset.f; document.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); applyFilter(); };
+});
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+
+/* 导出 CSV */
+document.getElementById('btnExport').onclick=()=>{
+  if(!RECORDS.length){ toast('暂无可导出的结果'); return; }
+  const headers = ['行号','状态','匹配关键词','任务名称','任务ID','素材ID','素材名称','必需标签','缺失标签','素材实际标签','链接'];
+  const rows = RECORDS.map(r=>[
+    r.rowNo, statusLabel(r.status), r.ruleKeyword||'', r.taskName, r.taskId, r.materialId, r.materialName,
+    (r.requiredTags||[]).join(' '), (r.missingTags||[]).join(' '), (r.actualTags||[]).join(' '), r.url
+  ]);
+  const csv = '\uFEFF' + [headers, ...rows].map(row=>row.map(c=>{
+    const s = String(c==null?'':c); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`素材校验结果_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('已导出 CSV');
+};
+
+/* ================= 规则管理 ================= */
+function refreshRulesCount(){ document.getElementById('cRules').textContent = RULES.length; }
+function renderRules(){
+  refreshRulesCount();
+  const list = document.getElementById('ruleList');
+  if(!RULES.length){ list.innerHTML = `<div class="empty">暂无规则，点击右上角「新增规则」添加</div>`; return; }
+  const sorted = RULES.slice().sort((a,b)=>(b.priority||0)-(a.priority||0)||a.keyword.localeCompare(b.keyword,'zh'));
+  list.innerHTML = sorted.map(r=>`
+    <div class="rule-item">
+      <div class="kw">🔑 ${esc(r.keyword)}</div>
+      <div class="tags">${(r.requiredTags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+      <div class="pri">优先级 <b>${r.priority||10}</b></div>
+      <div class="acts">
+        <button class="btn secondary sm" data-edit="${r.id}">✏️ 编辑</button>
+        <button class="btn danger sm" data-del="${r.id}">🗑 删除</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openRuleModal(b.dataset.edit));
+  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('确定删除该规则？')) return;
+    const r = await fetch('/api/verify/rule/'+b.dataset.del,{method:'DELETE'}).then(x=>x.json());
+    if(r.ok){ RULES = RULES.filter(x=>x.id!==b.dataset.del); renderRules(); toast('已删除规则'); }
+    else toast(r.error||'删除失败');
+  });
+}
+
+/* 规则弹窗 */
+function openRuleModal(id){
+  editingRuleId = id || null;
+  document.getElementById('rmTitle').textContent = id ? '编辑匹配规则' : '新增匹配规则';
+  const r = id ? RULES.find(x=>x.id===id) : null;
+  document.getElementById('rmKeyword').value = r ? r.keyword : '';
+  document.getElementById('rmTags').value = r ? (r.requiredTags||[]).join(' ') : '';
+  document.getElementById('rmPriority').value = r ? (r.priority||10) : 10;
+  document.getElementById('ruleModal').classList.add('show');
+  setTimeout(()=>document.getElementById('rmKeyword').focus(),50);
+}
+document.getElementById('btnAddRule').onclick=()=>openRuleModal(null);
+document.getElementById('rmCancel').onclick=()=>document.getElementById('ruleModal').classList.remove('show');
+document.getElementById('rmOk').onclick=async()=>{
+  const keyword = document.getElementById('rmKeyword').value.trim();
+  let tagsStr = document.getElementById('rmTags').value.trim();
+  const priority = parseInt(document.getElementById('rmPriority').value,10)||10;
+  if(!keyword){ toast('请输入关键词'); return; }
+  // 解析标签：支持空格、中文顿号分隔，自动补 #
+  let tags = tagsStr.split(/[\s、,，]+/).filter(Boolean).map(t=>t.startsWith('#')?t:'#'+t);
+  tags = [...new Set(tags)];
+  if(!tags.length){ toast('请输入至少一个必需标签'); return; }
+  const payload = { keyword, requiredTags: tags, priority };
+  if(editingRuleId) payload.id = editingRuleId;
+  const r = await fetch('/api/verify/rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(x=>x.json());
+  if(!r.ok){ toast(r.error||'保存失败'); return; }
+  // 刷新本地规则
+  const d = await fetch('/api/verify/rules').then(x=>x.json());
+  RULES = d.rules || [];
+  renderRules();
+  document.getElementById('ruleModal').classList.remove('show');
+  toast(editingRuleId?'规则已更新':'规则已添加');
+  // 重新校验已有结果（如果有）
+  if(RECORDS.length){
+    toast('规则已更新，结果可能有变化，请重新「解析并校验」');
+  }
+};
+document.getElementById('ruleModal').addEventListener('click',e=>{ if(e.target.id==='ruleModal') e.currentTarget.classList.remove('show'); });
+
+/* 重置默认规则 */
+document.getElementById('btnResetRules').onclick=async()=>{
+  if(!confirm('确定重置为默认规则？所有自定义规则将被覆盖。')) return;
+  // 先删除所有现有规则
+  for(const r of RULES){ await fetch('/api/verify/rule/'+r.id,{method:'DELETE'}); }
+  // 重新加载（后端 seed 会在下一次启动时重置，但我们直接创建默认规则）
+  const defaults = [
+    { keyword:'网赚', tags:['#网赚'], priority:10 },
+    { keyword:'签到', tags:['#签到'], priority:10 },
+    { keyword:'AI签到', tags:['#签到'], priority:15 },
+    { keyword:'达人签到', tags:['#网赚','#签到'], priority:20 },
+    { keyword:'秒杀-退货券', tags:['#电商','#秒杀退货券'], priority:20 },
+    { keyword:'1分购8元券-退货券', tags:['#电商','#1分购退货券'], priority:20 },
+    { keyword:'8元券退货券', tags:['#8元券退货券'], priority:15 }
+  ];
+  for(const d of defaults){
+    await fetch('/api/verify/rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keyword:d.keyword,requiredTags:d.tags,priority:d.priority})});
+  }
+  const s = await fetch('/api/verify/rules').then(x=>x.json());
+  RULES = s.rules || [];
+  renderRules();
+  toast('已重置为默认规则（7条）');
+};
+
+/* ================= 启动 ================= */
+loadState();
+</script>
+</body>
+</html>

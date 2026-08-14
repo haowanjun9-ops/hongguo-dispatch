@@ -1,0 +1,256 @@
+{
+  "rules": [
+    {
+      "id": "r-msstfmxq1",
+      "keyword": "网赚",
+      "requiredTags": [
+        "#网赚"
+      ],
+      "priority": 10
+    },
+    {
+      "id": "r-msstfmxq2",
+      "keyword": "签到",
+      "requiredTags": [
+        "#签到"
+      ],
+      "priority": 10
+    },
+    {
+      "id": "r-msstfmxq3",
+      "keyword": "AI签到",
+      "requiredTags": [
+        "#签到"
+      ],
+      "priority": 15
+    },
+    {
+      "id": "r-msstfmxq4",
+      "keyword": "达人签到",
+      "requiredTags": [
+        "#网赚",
+        "#签到"
+      ],
+      "priority": 20
+    },
+    {
+      "id": "r-msstfmxq5",
+      "keyword": "秒杀-退货券",
+      "requiredTags": [
+        "#电商",
+        "#秒杀退货券"
+      ],
+      "priority": 20
+    },
+    {
+      "id": "r-msstfmxq6",
+      "keyword": "1分购8元券-退货券",
+      "requiredTags": [
+        "#电商",
+        "#1分购退货券"
+      ],
+      "priority": 20
+    },
+    {
+      "id": "r-msstfmxq7",
+      "keyword": "8元券退货券",
+      "requiredTags": [
+        "#8元券退货券"
+      ],
+      "priority": 15
+    },
+    {
+      "id": "r-mssthqu653ci",
+      "keyword": "未知类型",
+      "requiredTags": [
+        "#未知标签"
+      ],
+      "priority": 10
+    }
+  ],
+  "records": [
+    {
+      "id": "rec-mssti32919mdf",
+      "rowNo": "121",
+      "taskName": "新LOGO-抖音商城APP-NG-1分购8元券-退货券",
+      "taskId": "7668655842887024650",
+      "materialId": "7673515717337137206",
+      "materialName": "抖音商城新人福利 退货免运费啦 #电商 #8元券退货券 #抖音商城 #福利多多 #AI",
+      "url": "https://example.com/1",
+      "status": "fail",
+      "ruleId": "r-msstfmxq6",
+      "ruleKeyword": "1分购8元券-退货券",
+      "requiredTags": [
+        "#电商",
+        "#1分购退货券"
+      ],
+      "missingTags": [
+        "#1分购退货券"
+      ],
+      "actualTags": [
+        "#电商",
+        "#8元券退货券",
+        "#抖音商城",
+        "#福利多多",
+        "#AI"
+      ]
+    },
+    {
+      "id": "rec-mssti3295v4x1",
+      "rowNo": "122",
+      "taskName": "新LOGO-抖音商城APP-NG-1分购8元券-退货券",
+      "taskId": "7668655842887024650",
+      "materialId": "7673514987092754438",
+      "materialName": "网购不想出运费的看过来 抖音商城送退货包邮券 #电商 #8元券退货券 #抖音商城 #福利多多 #AI",
+      "url": "https://example.com/2",
+      "status": "fail",
+      "ruleId": "r-msstfmxq6",
+      "ruleKeyword": "1分购8元券-退货券",
+      "requiredTags": [
+        "#电商",
+        "#1分购退货券"
+      ],
+      "missingTags": [
+        "#1分购退货券"
+      ],
+      "actualTags": [
+        "#电商",
+        "#8元券退货券",
+        "#抖音商城",
+        "#福利多多",
+        "#AI"
+      ]
+    },
+    {
+      "id": "rec-mssti329dskzp",
+      "rowNo": "123",
+      "taskName": "新LOGO-抖音商城APP-NG-1分购8元券-退货券",
+      "taskId": "7668655842887024650",
+      "materialId": "7673514288695050255",
+      "materialName": "抖音商城新人福利 最高8元无门槛券 #电商 #抖音商城 #福利多多 #AI",
+      "url": "https://example.com/3",
+      "status": "fail",
+      "ruleId": "r-msstfmxq6",
+      "ruleKeyword": "1分购8元券-退货券",
+      "requiredTags": [
+        "#电商",
+        "#1分购退货券"
+      ],
+      "missingTags": [
+        "#1分购退货券"
+      ],
+      "actualTags": [
+        "#电商",
+        "#抖音商城",
+        "#福利多多",
+        "#AI"
+      ]
+    },
+    {
+      "id": "rec-mssti32955df1",
+      "rowNo": "176",
+      "taskName": "新LOGO-抖音商城APP-NG-网赚04-鲸鱼",
+      "taskId": "7668655842887024651",
+      "materialId": "7673478267982331939",
+      "materialName": "好物不合心意放心退，抖音商城能够免费领取退货券 #网赚 #福利多多",
+      "url": "https://example.com/4",
+      "status": "pass",
+      "ruleId": "r-msstfmxq1",
+      "ruleKeyword": "网赚",
+      "requiredTags": [
+        "#网赚"
+      ],
+      "missingTags": [],
+      "actualTags": [
+        "#网赚",
+        "#福利多多"
+      ]
+    },
+    {
+      "id": "rec-mssti329n89f5",
+      "rowNo": "177",
+      "taskName": "新LOGO-抖音商城APP-NG-签到02-鲸鱼",
+      "taskId": "7668655842887024652",
+      "materialId": "7673477451691343891",
+      "materialName": "别再自费退货啦！抖音商城免费领取退货券，省心省钱 #电商",
+      "url": "https://example.com/5",
+      "status": "fail",
+      "ruleId": "r-msstfmxq2",
+      "ruleKeyword": "签到",
+      "requiredTags": [
+        "#签到"
+      ],
+      "missingTags": [
+        "#签到"
+      ],
+      "actualTags": [
+        "#电商"
+      ]
+    },
+    {
+      "id": "rec-mssti3290uxuq",
+      "rowNo": "178",
+      "taskName": "新LOGO-抖音商城APP-NG-达人签到01",
+      "taskId": "7668655842887024653",
+      "materialId": "7673476790930145323",
+      "materialName": "抖音商城福利来袭，免费领取退货券，网购退换不心疼 #签到 #抖音商城",
+      "url": "https://example.com/6",
+      "status": "fail",
+      "ruleId": "r-msstfmxq4",
+      "ruleKeyword": "达人签到",
+      "requiredTags": [
+        "#网赚",
+        "#签到"
+      ],
+      "missingTags": [
+        "#网赚"
+      ],
+      "actualTags": [
+        "#签到",
+        "#抖音商城"
+      ]
+    },
+    {
+      "id": "rec-mssti329dop2q",
+      "rowNo": "179",
+      "taskName": "新LOGO-抖音商城APP-NG-秒杀-退货券-鲸鱼",
+      "taskId": "7668655842887024654",
+      "materialId": "767347615314763812",
+      "materialName": "网购担心退货花运费？抖音商城可免费领取退货券 #电商 #秒杀退货券 #福利多多",
+      "url": "https://example.com/7",
+      "status": "pass",
+      "ruleId": "r-msstfmxq5",
+      "ruleKeyword": "秒杀-退货券",
+      "requiredTags": [
+        "#电商",
+        "#秒杀退货券"
+      ],
+      "missingTags": [],
+      "actualTags": [
+        "#电商",
+        "#秒杀退货券",
+        "#福利多多"
+      ]
+    },
+    {
+      "id": "rec-mssti329e7phz",
+      "rowNo": "180",
+      "taskName": "新LOGO-抖音商城APP-NG-未知类型-鲸鱼",
+      "taskId": "7668655842887024655",
+      "materialId": "767347615314763999",
+      "materialName": "未知任务类型测试文案 #未知标签",
+      "url": "https://example.com/8",
+      "status": "pass",
+      "ruleId": "r-mssthqu653ci",
+      "ruleKeyword": "未知类型",
+      "requiredTags": [
+        "#未知标签"
+      ],
+      "missingTags": [],
+      "actualTags": [
+        "#未知标签"
+      ]
+    }
+  ],
+  "lastUpdated": 1786704121089
+}

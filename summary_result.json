@@ -1,0 +1,10 @@
+{
+  "over_threshold_count": 4,
+  "mall_total_cost": 50702.88,
+  "lark_send_success": true,
+  "lark_send_info": "发送成功，message_id=om_x100b67236ad718b0c3ed0466401caba",
+  "csv_path": "/workspace/mall_cost_over_2000.csv",
+  "md_path": "/workspace/mall_message.md",
+  "message_id": "om_x100b67236ad718b0c3ed0466401caba",
+  "chat_id": "oc_74cf357efbbda7b35af5078abcb29bdb"
+}
